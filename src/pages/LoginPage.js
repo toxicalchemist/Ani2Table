@@ -71,7 +71,16 @@ const LoginPage = () => {
             {/* Logo and Header */}
             <div className="text-center mb-8">
               <div className="flex items-center justify-center space-x-3 mb-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center shadow-lg">
+                <img 
+                  src="/logo/ani2table-logo.png" 
+                  alt="Ani2Table Logo" 
+                  className="w-16 h-16 rounded-full shadow-lg object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-dark rounded-full items-center justify-center shadow-lg" style={{display: 'none'}}>
                   <span className="text-white font-bold text-2xl">A</span>
                 </div>
                 <span className="font-bold text-3xl bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const FarmerDashboard = () => {
+  const [timeframe, setTimeframe] = useState('weekly');
+
   const salesData = [
     { day: 'Mon', sales: 1200 },
     { day: 'Tue', sales: 1900 },
@@ -59,6 +61,22 @@ const FarmerDashboard = () => {
         </div>
 
         {/* Stats Cards */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-800">Sales Overview</h2>
+            <select 
+              value={timeframe}
+              onChange={(e) => setTimeframe(e.target.value)}
+              className="px-6 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary transition text-lg font-semibold"
+            >
+              <option value="today">Today</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">

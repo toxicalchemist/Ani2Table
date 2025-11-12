@@ -16,7 +16,7 @@ const SignupPage = () => {
     username: '',
     password: '',
     confirmPassword: '',
-    userType: 'consumer'
+    userType: 'consumer' // Fixed to consumer only
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -109,7 +109,16 @@ const SignupPage = () => {
             {/* Logo and Header */}
             <div className="text-center mb-8">
               <div className="flex items-center justify-center space-x-3 mb-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center shadow-lg">
+                <img 
+                  src="/logo/ani2table-logo.png" 
+                  alt="Ani2Table Logo" 
+                  className="w-16 h-16 rounded-full shadow-lg object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-dark rounded-full items-center justify-center shadow-lg" style={{display: 'none'}}>
                   <span className="text-white font-bold text-2xl">A</span>
                 </div>
                 <span className="font-bold text-3xl bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
@@ -341,29 +350,14 @@ const SignupPage = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label htmlFor="userType" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Account Type *
-                    </label>
-                    <select
-                      id="userType"
-                      name="userType"
-                      value={formData.userType}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
-                      required
-                    >
-                      <option value="consumer">Consumer - Buy fresh rice from local farmers</option>
-                      <option value="farmer">Farmer - Sell your rice products</option>
-                    </select>
-                  </div>
+                  {/* Removed Account Type selector - Consumer only */}
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transform transition-all ${
+                className={`w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl shadow-lg text-lg font-bold text-white bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transform transition-all ${
                   loading ? 'opacity-75 cursor-not-allowed' : 'hover:scale-105'
                 }`}
               >

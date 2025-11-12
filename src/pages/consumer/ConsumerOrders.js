@@ -42,6 +42,45 @@ const ConsumerOrders = () => {
       status: 'pending',
       estimatedDelivery: '2024-11-07'
     },
+    {
+      id: 'ORD-005',
+      date: '2024-10-28',
+      farmer: "Cruz Farm",
+      items: [{ name: 'Sticky Rice', quantity: 12, price: 55 }],
+      total: 710,
+      status: 'delivered',
+      rating: 4,
+      deliveryDate: '2024-10-30'
+    },
+    {
+      id: 'ORD-006',
+      date: '2024-10-25',
+      farmer: "Lopez Farm",
+      items: [{ name: 'Dinorado Rice', quantity: 15, price: 48 }],
+      total: 770,
+      status: 'delivered',
+      rating: 5,
+      deliveryDate: '2024-10-27'
+    },
+    {
+      id: 'ORD-007',
+      date: '2024-11-05',
+      farmer: "Mendoza Farm",
+      items: [{ name: 'Red Rice', quantity: 7, price: 52 }],
+      total: 414,
+      status: 'processing',
+      estimatedDelivery: '2024-11-08'
+    },
+    {
+      id: 'ORD-008',
+      date: '2024-10-22',
+      farmer: "Fernandez Farm",
+      items: [{ name: 'Organic White Rice', quantity: 18, price: 47 }],
+      total: 896,
+      status: 'delivered',
+      rating: 5,
+      deliveryDate: '2024-10-24'
+    },
   ];
 
   const getStatusColor = (status) => {
@@ -151,6 +190,54 @@ const ConsumerOrders = () => {
                       <span className="font-semibold">₱{item.price * item.quantity}</span>
                     </div>
                   ))}
+                </div>
+
+                {/* Order Timeline */}
+                <div className="mb-6 py-4">
+                  <div className="flex items-center justify-between relative">
+                    {/* Background connecting line */}
+                    <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200 z-0" style={{left: '2.5%', right: '2.5%'}} />
+                    <div 
+                      className="absolute top-5 left-0 h-1 bg-primary z-0 transition-all duration-500" 
+                      style={{
+                        left: '2.5%',
+                        width: order.status === 'pending' ? '0%' : 
+                               order.status === 'processing' ? '32%' : 
+                               order.status === 'in-transit' ? '65%' : '95%'
+                      }}
+                    />
+                    
+                    {/* Timeline Steps */}
+                    {[
+                      { key: 'pending', label: 'Order Placed', icon: '📝' },
+                      { key: 'processing', label: 'Processing', icon: '⚙️' },
+                      { key: 'in-transit', label: 'In Transit', icon: '🚚' },
+                      { key: 'delivered', label: 'Delivered', icon: '✅' }
+                    ].map((step, idx) => {
+                      const statuses = ['pending', 'processing', 'in-transit', 'delivered'];
+                      const currentIndex = statuses.indexOf(order.status);
+                      const stepIndex = statuses.indexOf(step.key);
+                      const isCompleted = stepIndex <= currentIndex;
+                      const isCurrent = stepIndex === currentIndex;
+                      
+                      return (
+                        <div key={step.key} className="flex flex-col items-center z-10 flex-1">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg mb-2 transition-all duration-300 ${
+                            isCompleted 
+                              ? 'bg-primary text-white shadow-lg scale-110' 
+                              : 'bg-gray-200 text-gray-500'
+                          } ${isCurrent ? 'ring-4 ring-primary ring-opacity-30 animate-pulse' : ''}`}>
+                            {step.icon}
+                          </div>
+                          <p className={`text-xs font-semibold text-center ${
+                            isCompleted ? 'text-primary' : 'text-gray-500'
+                          }`}>
+                            {step.label}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Order Status Info */}

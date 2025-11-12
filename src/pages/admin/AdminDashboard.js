@@ -96,19 +96,21 @@ const AdminDashboard = () => {
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-xl font-bold mb-4">Sales by Product Type</h3>
-            <ResponsiveContainer width="100%" height={300}>
+          <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+            <h3 className="text-2xl font-bold mb-6 text-gray-800">Sales by Product Type</h3>
+            <ResponsiveContainer width="100%" height={400}>
               <PieChart>
                 <Pie
                   data={salesData}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
+                  labelLine={true}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
+                  outerRadius={140}
                   fill="#8884d8"
                   dataKey="value"
+                  stroke="#fff"
+                  strokeWidth={3}
                 >
                   {salesData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -119,9 +121,9 @@ const AdminDashboard = () => {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-xl font-bold mb-4">Monthly Sales Trend</h3>
-            <ResponsiveContainer width="100%" height={300}>
+          <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+            <h3 className="text-2xl font-bold mb-6 text-gray-800">Monthly Sales Trend</h3>
+            <ResponsiveContainer width="100%" height={400}>
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
@@ -154,6 +156,10 @@ const AdminDashboard = () => {
                   { id: '#ORD-002', customer: 'Maria Santos', product: 'Brown Rice 5kg', amount: '₱250', status: 'In Transit' },
                   { id: '#ORD-003', customer: 'Pedro Garcia', product: 'Sinandomeng 20kg', amount: '₱800', status: 'Processing' },
                   { id: '#ORD-004', customer: 'Ana Lopez', product: 'Jasmine Rice 15kg', amount: '₱675', status: 'Delivered' },
+                  { id: '#ORD-005', customer: 'Carlos Reyes', product: 'Dinorado Rice 12kg', amount: '₱660', status: 'Delivered' },
+                  { id: '#ORD-006', customer: 'Elena Cruz', product: 'Black Rice 8kg', amount: '₱520', status: 'In Transit' },
+                  { id: '#ORD-007', customer: 'Roberto Diaz', product: 'Sticky Rice 6kg', amount: '₱288', status: 'Processing' },
+                  { id: '#ORD-008', customer: 'Sofia Mendez', product: 'Organic White 25kg', amount: '₱1,175', status: 'Pending' },
                 ].map((order, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-4 font-medium">{order.id}</td>
@@ -164,7 +170,8 @@ const AdminDashboard = () => {
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                         order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
                         order.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
-                        'bg-yellow-100 text-yellow-800'
+                        order.status === 'Processing' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
                       }`}>
                         {order.status}
                       </span>

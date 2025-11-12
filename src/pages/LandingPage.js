@@ -27,6 +27,17 @@ const LandingPage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
         <div className="absolute inset-0 flex items-center justify-center text-center text-white px-4 py-20">
           <div className="max-w-5xl animate-fade-in">
+            {/* Logo */}
+            <div className="mb-8 flex justify-center">
+              <img 
+                src="/logo/ani2table-logo.png" 
+                alt="Ani2Table Logo" 
+                className="w-48 h-48 rounded-full shadow-2xl border-4 border-white/30 backdrop-blur-sm object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+            </div>
             <h1 className="text-6xl md:text-7xl lg:text-8xl font-extrabold mb-8 leading-tight drop-shadow-2xl">
               Bringing Local Rice<br />
               <span className="text-secondary">To Your Table</span>
@@ -265,7 +276,17 @@ const LandingPage = () => {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-2">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-secondary to-secondary-light rounded-full flex items-center justify-center shadow-lg">
+                <img 
+                  src="/logo/ani2table-logo.png" 
+                  alt="Ani2Table Logo" 
+                  className="w-12 h-12 object-contain"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div className="w-12 h-12 bg-gradient-to-br from-secondary to-secondary-light rounded-full items-center justify-center shadow-lg hidden">
                   <span className="text-white font-bold text-xl">A</span>
                 </div>
                 <span className="font-bold text-2xl">ANI2TABLE</span>

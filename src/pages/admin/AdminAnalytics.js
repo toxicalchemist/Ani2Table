@@ -12,13 +12,20 @@ const AdminAnalytics = () => {
     { month: 'Apr', revenue: 61000, orders: 170 },
     { month: 'May', revenue: 55000, orders: 155 },
     { month: 'Jun', revenue: 67000, orders: 185 },
+    { month: 'Jul', revenue: 72000, orders: 195 },
+    { month: 'Aug', revenue: 69000, orders: 180 },
+    { month: 'Sep', revenue: 75000, orders: 200 },
+    { month: 'Oct', revenue: 81000, orders: 215 },
+    { month: 'Nov', revenue: 78000, orders: 205 },
+    { month: 'Dec', revenue: 85000, orders: 225 },
   ];
 
   const productDistribution = [
     { name: 'Jasmine', value: 35 },
     { name: 'Sinandomeng', value: 30 },
     { name: 'Brown', value: 20 },
-    { name: 'Others', value: 15 },
+    { name: 'Specialty', value: 10 },
+    { name: 'Others', value: 5 },
   ];
 
   const topProducts = [
@@ -27,6 +34,9 @@ const AdminAnalytics = () => {
     { name: 'Brown Rice', sales: 300, revenue: 15000 },
     { name: 'Black Rice', sales: 180, revenue: 10800 },
     { name: 'Sticky Rice', sales: 150, revenue: 8250 },
+    { name: 'Dinorado Rice', sales: 135, revenue: 7425 },
+    { name: 'Red Rice', sales: 120, revenue: 7200 },
+    { name: 'Organic White Rice', sales: 110, revenue: 5170 },
   ];
 
   const COLORS = ['#8B1A1A', '#D4AF37', '#4CAF50', '#2196F3'];
@@ -44,8 +54,9 @@ const AdminAnalytics = () => {
           <select 
             value={timeframe} 
             onChange={(e) => setTimeframe(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary"
+            className="px-6 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary font-semibold text-lg"
           >
+            <option value="today">Today</option>
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
             <option value="yearly">Yearly</option>
@@ -94,19 +105,21 @@ const AdminAnalytics = () => {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-xl font-bold mb-4">Product Distribution</h3>
-            <ResponsiveContainer width="100%" height={300}>
+          <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+            <h3 className="text-2xl font-bold mb-6 text-gray-800">Product Distribution</h3>
+            <ResponsiveContainer width="100%" height={400}>
               <PieChart>
                 <Pie
                   data={productDistribution}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
+                  labelLine={true}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
+                  outerRadius={140}
                   fill="#8884d8"
                   dataKey="value"
+                  stroke="#fff"
+                  strokeWidth={3}
                 >
                   {productDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

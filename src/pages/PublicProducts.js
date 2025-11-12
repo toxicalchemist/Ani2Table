@@ -400,6 +400,22 @@ const PublicProducts = () => {
       {/* Footer */}
       <footer className="bg-primary-dark text-white py-8">
         <div className="container mx-auto px-4 text-center">
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <img 
+              src="/logo/ani2table-logo.png" 
+              alt="Ani2Table Logo" 
+              className="w-10 h-10 object-contain"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <div className="w-10 h-10 bg-gradient-to-br from-secondary to-secondary-light rounded-full items-center justify-center shadow-lg hidden">
+              <span className="text-white font-bold text-xl">A</span>
+            </div>
+            <span className="font-bold text-xl">ANI2TABLE</span>
+          </div>
           <p className="text-gray-200">&copy; 2024 Ani2Table. Supporting Filipino Farmers.</p>
         </div>
       </footer>

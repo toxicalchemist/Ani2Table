@@ -126,21 +126,21 @@ const ConsumerMessages = () => {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {selectedChat.messages.map((message, index) => (
                   <div
                     key={index}
                     className={`flex ${message.sender === 'consumer' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                      className={`max-w-md lg:max-w-lg px-6 py-4 rounded-2xl shadow-md ${
                         message.sender === 'consumer'
                           ? 'bg-primary text-white'
                           : 'bg-gray-200 text-gray-800'
                       }`}
                     >
-                      <p>{message.text}</p>
-                      <p className={`text-xs mt-1 ${
+                      <p className="text-lg leading-relaxed">{message.text}</p>
+                      <p className={`text-sm mt-2 ${
                         message.sender === 'consumer' ? 'text-gray-200' : 'text-gray-500'
                       }`}>
                         {message.time}
@@ -151,18 +151,18 @@ const ConsumerMessages = () => {
               </div>
 
               {/* Message Input */}
-              <form onSubmit={handleSendMessage} className="p-4 border-t">
-                <div className="flex space-x-2">
+              <form onSubmit={handleSendMessage} className="p-6 border-t bg-gray-50">
+                <div className="flex space-x-3">
                   <input
                     type="text"
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-primary"
+                    className="flex-1 px-6 py-4 text-lg border-2 border-gray-300 rounded-full focus:outline-none focus:border-primary shadow-sm"
                   />
                   <button
                     type="submit"
-                    className="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-full transition"
+                    className="bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-full transition font-bold text-lg shadow-lg"
                   >
                     Send
                   </button>

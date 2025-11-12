@@ -1,9 +1,10 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { logout, getCurrentUser } from '../services/authService';
 
 const Sidebar = ({ userType }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const currentUser = getCurrentUser();
 
   const handleLogout = () => {
@@ -60,20 +61,27 @@ const Sidebar = ({ userType }) => {
       )}
 
       <nav className="space-y-2 flex-1">
-        {links.map((link, index) => (
-          <Link
-            key={index}
-            to={link.path}
-            className="flex items-center space-x-3 px-4 py-3 rounded hover:bg-primary-dark transition"
-          >
-            <span className="text-xl">{link.icon}</span>
-            <span>{link.name}</span>
-          </Link>
-        ))}
+        {links.map((link, index) => {
+          const isActive = location.pathname === link.path;
+          return (
+            <Link
+              key={index}
+              to={link.path}
+              className={`flex items-center space-x-3 px-4 py-3 rounded transition ${
+                isActive 
+                  ? 'bg-primary-dark shadow-lg border-l-4 border-secondary' 
+                  : 'hover:bg-primary-dark/50'
+              }`}
+            >
+              <span className="text-xl">{link.icon}</span>
+              <span className={isActive ? 'font-bold' : ''}>{link.name}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Logout Button */}
-      <div className="mt-auto pt-4 border-t border-primary-light">
+      <div className="pb-4 pt-4">
         <button
           onClick={handleLogout}
           className="w-full flex items-center space-x-3 px-4 py-3 rounded bg-red-600 hover:bg-red-700 transition text-white font-semibold"

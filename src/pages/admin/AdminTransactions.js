@@ -13,6 +13,7 @@ const AdminTransactions = () => {
       farmer: "Pedro's Farm",
       amount: 450, 
       paymentMethod: 'GCash',
+      paymentStatus: 'Paid',
       deliveryStatus: 'Delivered',
       date: '2024-11-01',
       time: '10:30 AM'
@@ -24,6 +25,7 @@ const AdminTransactions = () => {
       farmer: 'Santos Farm',
       amount: 250, 
       paymentMethod: 'Cash on Delivery',
+      paymentStatus: 'Pending',
       deliveryStatus: 'In Transit',
       date: '2024-11-02',
       time: '02:15 PM'
@@ -35,6 +37,7 @@ const AdminTransactions = () => {
       farmer: 'Garcia Farm',
       amount: 800, 
       paymentMethod: 'Bank Transfer',
+      paymentStatus: 'Paid',
       deliveryStatus: 'Processing',
       date: '2024-11-03',
       time: '09:45 AM'
@@ -46,6 +49,7 @@ const AdminTransactions = () => {
       farmer: 'Lopez Farm',
       amount: 675, 
       paymentMethod: 'PayMaya',
+      paymentStatus: 'Paid',
       deliveryStatus: 'Pending',
       date: '2024-11-04',
       time: '11:20 AM'
@@ -57,11 +61,141 @@ const AdminTransactions = () => {
       farmer: 'Reyes Farm',
       amount: 480, 
       paymentMethod: 'GCash',
+      paymentStatus: 'Paid',
       deliveryStatus: 'Delivered',
       date: '2024-10-30',
       time: '03:00 PM'
     },
+    { 
+      id: 'TXN-006', 
+      orderId: 'ORD-006',
+      customer: 'Elena Cruz', 
+      farmer: 'Cruz Farm',
+      amount: 920, 
+      paymentMethod: 'GCash',
+      paymentStatus: 'Paid',
+      deliveryStatus: 'Delivered',
+      date: '2024-10-28',
+      time: '01:45 PM'
+    },
+    { 
+      id: 'TXN-007', 
+      orderId: 'ORD-007',
+      customer: 'Roberto Diaz', 
+      farmer: 'Diaz Farm',
+      amount: 340, 
+      paymentMethod: 'Cash on Delivery',
+      paymentStatus: 'Paid',
+      deliveryStatus: 'Delivered',
+      date: '2024-10-27',
+      time: '04:20 PM'
+    },
+    { 
+      id: 'TXN-008', 
+      orderId: 'ORD-008',
+      customer: 'Sofia Mendez', 
+      farmer: 'Mendoza Farm',
+      amount: 1150, 
+      paymentMethod: 'Bank Transfer',
+      paymentStatus: 'Paid',
+      deliveryStatus: 'Delivered',
+      date: '2024-10-26',
+      time: '10:00 AM'
+    },
+    { 
+      id: 'TXN-009', 
+      orderId: 'ORD-009',
+      customer: 'Miguel Torres', 
+      farmer: 'Torres Farm',
+      amount: 560, 
+      paymentMethod: 'PayMaya',
+      paymentStatus: 'Paid',
+      deliveryStatus: 'Delivered',
+      date: '2024-10-25',
+      time: '08:30 AM'
+    },
+    { 
+      id: 'TXN-010', 
+      orderId: 'ORD-010',
+      customer: 'Isabel Ramos', 
+      farmer: 'Santos Farm',
+      amount: 780, 
+      paymentMethod: 'GCash',
+      paymentStatus: 'Paid',
+      deliveryStatus: 'In Transit',
+      date: '2024-11-05',
+      time: '02:50 PM'
+    },
+    { 
+      id: 'TXN-011', 
+      orderId: 'ORD-011',
+      customer: 'Diego Fernandez', 
+      farmer: 'Fernandez Farm',
+      amount: 425, 
+      paymentMethod: 'Cash on Delivery',
+      paymentStatus: 'Pending',
+      deliveryStatus: 'Processing',
+      date: '2024-11-05',
+      time: '11:15 AM'
+    },
+    { 
+      id: 'TXN-012', 
+      orderId: 'ORD-012',
+      customer: 'Carmen Villanueva', 
+      farmer: 'Villanueva Farm',
+      amount: 890, 
+      paymentMethod: 'Bank Transfer',
+      paymentStatus: 'Paid',
+      deliveryStatus: 'Delivered',
+      date: '2024-10-24',
+      time: '09:00 AM'
+    },
+    { 
+      id: 'TXN-013', 
+      orderId: 'ORD-013',
+      customer: 'Luis Aquino', 
+      farmer: 'Aquino Farm',
+      amount: 650, 
+      paymentMethod: 'GCash',
+      paymentStatus: 'Paid',
+      deliveryStatus: 'Delivered',
+      date: '2024-10-23',
+      time: '03:30 PM'
+    },
+    { 
+      id: 'TXN-014', 
+      orderId: 'ORD-014',
+      customer: 'Rosa Martinez', 
+      farmer: 'Garcia Farm',
+      amount: 510, 
+      paymentMethod: 'PayMaya',
+      paymentStatus: 'Paid',
+      deliveryStatus: 'In Transit',
+      date: '2024-11-05',
+      time: '01:00 PM'
+    },
+    { 
+      id: 'TXN-015', 
+      orderId: 'ORD-015',
+      customer: 'Fernando Silva', 
+      farmer: 'Lopez Farm',
+      amount: 975, 
+      paymentMethod: 'GCash',
+      paymentStatus: 'Paid',
+      deliveryStatus: 'Processing',
+      date: '2024-11-06',
+      time: '10:45 AM'
+    },
   ];
+
+  const getPaymentStatusColor = (status) => {
+    switch (status) {
+      case 'Paid': return 'bg-green-100 text-green-800';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Failed': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   const getDeliveryStatusColor = (status) => {
     switch (status) {
@@ -219,7 +353,10 @@ const AdminTransactions = () => {
                   Amount
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Payment
+                  Payment Method
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Payment Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Delivery Status
@@ -249,6 +386,11 @@ const AdminTransactions = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-gray-600">{txn.paymentMethod}</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentStatusColor(txn.paymentStatus)}`}>
+                      {txn.paymentStatus}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getDeliveryStatusColor(txn.deliveryStatus)}`}>

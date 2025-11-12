@@ -1,21 +1,49 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import ProductCard from '../../components/ProductCard';
+import Toast from '../../components/Toast';
 
 const FarmerProducts = () => {
   const [products] = useState([
-    { id: 1, name: 'Jasmine Rice', type: 'Premium', price: 45, stock: 500, status: 'In Stock', rating: 4.8, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400' },
-    { id: 2, name: 'Sinandomeng Rice', type: 'Regular', price: 40, stock: 750, status: 'In Stock', rating: 4.6, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400' },
-    { id: 3, name: 'Brown Rice', type: 'Organic', price: 50, stock: 0, status: 'Out of Stock', rating: 4.9, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400' },
-    { id: 4, name: 'Black Rice', type: 'Premium', price: 60, stock: 200, status: 'In Stock', rating: 4.7, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400' },
+    { id: 1, name: 'Jasmine Rice', type: 'Premium', price: 45, stock: 500, status: 'In Stock', rating: 4.8, reviews: 245, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Premium quality jasmine rice with aromatic fragrance. Perfect for special occasions and everyday meals.' },
+    { id: 2, name: 'Sinandomeng Rice', type: 'Regular', price: 40, stock: 750, status: 'In Stock', rating: 4.6, reviews: 189, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Classic Filipino rice variety. Great taste and texture for daily consumption.' },
+    { id: 3, name: 'Brown Rice', type: 'Organic', price: 50, stock: 0, status: 'Out of Stock', rating: 4.9, reviews: 312, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Organic brown rice rich in fiber and nutrients. Healthy choice for wellness-focused consumers.' },
+    { id: 4, name: 'Black Rice', type: 'Premium', price: 60, stock: 200, status: 'In Stock', rating: 4.7, reviews: 156, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Rare black rice variety with high antioxidants. Distinctive color and nutty flavor.' },
+    { id: 5, name: 'Sticky Rice', type: 'Specialty', price: 55, stock: 85, status: 'In Stock', rating: 4.8, reviews: 203, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Traditional glutinous rice perfect for desserts and special dishes.' },
+    { id: 6, name: 'Red Rice', type: 'Organic', price: 52, stock: 420, status: 'In Stock', rating: 4.5, reviews: 127, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Nutrient-dense red rice with natural antioxidants and earthy flavor.' },
+    { id: 7, name: 'Organic White Rice', type: 'Organic', price: 47, stock: 95, status: 'In Stock', rating: 4.7, reviews: 178, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Certified organic white rice grown without chemicals or pesticides.' },
+    { id: 8, name: 'Mixed Grain Rice', type: 'Specialty', price: 58, stock: 310, status: 'In Stock', rating: 4.6, reviews: 142, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Healthy blend of different rice varieties and whole grains for balanced nutrition.' },
   ]);
 
   const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  // Check for low stock products
+  const lowStockProducts = products.filter(p => p.stock > 0 && p.stock < 100);
+  const outOfStockProducts = products.filter(p => p.stock === 0);
 
   const handleEditProduct = (product) => {
     setSelectedProduct(product);
     setShowModal(true);
+  };
+
+  const handleUpdateProduct = (e) => {
+    e.preventDefault();
+    setShowModal(false);
+    setToast({ message: 'Product updated successfully!', type: 'success' });
+  };
+
+  const handleDeleteProduct = (productName) => {
+    if (window.confirm(`Are you sure you want to delete ${productName}?`)) {
+      setToast({ message: `${productName} has been deleted`, type: 'error' });
+    }
+  };
+
+  const handleViewProduct = (product) => {
+    setSelectedProduct(product);
+    setShowViewModal(true);
   };
 
   return (
@@ -23,6 +51,44 @@ const FarmerProducts = () => {
       <Sidebar userType="farmer" />
       
       <div className="flex-1 p-8">
+        {/* Low Stock Alert */}
+        {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
+          <div className="mb-6 space-y-3">
+            {outOfStockProducts.length > 0 && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow">
+                <div className="flex items-start">
+                  <svg className="w-6 h-6 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div>
+                    <h3 className="font-bold text-red-800 text-lg">Out of Stock Alert!</h3>
+                    <p className="text-red-700 mt-1">
+                      {outOfStockProducts.length} product(s) are out of stock: {' '}
+                      <span className="font-semibold">{outOfStockProducts.map(p => p.name).join(', ')}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {lowStockProducts.length > 0 && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg shadow">
+                <div className="flex items-start">
+                  <svg className="w-6 h-6 text-yellow-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div>
+                    <h3 className="font-bold text-yellow-800 text-lg">Low Stock Warning</h3>
+                    <p className="text-yellow-700 mt-1">
+                      {lowStockProducts.length} product(s) have low stock: {' '}
+                      <span className="font-semibold">{lowStockProducts.map(p => `${p.name} (${p.stock} kg)`).join(', ')}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">My Products</h1>
@@ -64,21 +130,57 @@ const FarmerProducts = () => {
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => (
-            <div key={product.id} className="relative">
-              <ProductCard product={product} onClick={() => handleEditProduct(product)} />
-              <div className="absolute top-2 right-2 flex space-x-2">
+            <div key={product.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+              <div className="relative">
+                <img 
+                  src={product.image} 
+                  alt={product.name}
+                  className="w-full h-48 object-cover"
+                />
+                <span className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold ${
+                  product.stock === 0 ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+                }`}>
+                  {product.status}
+                </span>
+                {/* Edit/Delete buttons on the left */}
+                <div className="absolute top-2 left-2 flex flex-col space-y-2 z-10">
+                  <button 
+                    onClick={() => handleEditProduct(product)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteProduct(product.name)}
+                    className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="p-5">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">{product.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">{product.type}</p>
+                <div className="mb-4">
+                  <p className="text-sm text-gray-500">Stock: <span className="font-bold">{product.stock} kg</span></p>
+                </div>
+                <div className="flex items-center justify-between mb-4 pb-4 border-b">
+                  <div className="text-2xl font-bold text-primary">₱{product.price}/kg</div>
+                  <div className="flex items-center">
+                    <span className="text-yellow-500 mr-1">⭐</span>
+                    <span className="font-bold">{product.rating}</span>
+                    <span className="text-gray-500 text-sm ml-1">({product.reviews})</span>
+                  </div>
+                </div>
                 <button 
-                  onClick={() => handleEditProduct(product)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition"
+                  onClick={() => handleViewProduct(product)}
+                  className="w-full bg-primary hover:bg-primary-dark text-white py-3 rounded-lg font-bold transition"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-                <button className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  View Details
                 </button>
               </div>
             </div>
@@ -99,7 +201,7 @@ const FarmerProducts = () => {
                   </svg>
                 </button>
               </div>
-              <form className="space-y-4">
+              <form onSubmit={handleUpdateProduct} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Product Name</label>
                   <input 
@@ -162,6 +264,100 @@ const FarmerProducts = () => {
               </form>
             </div>
           </div>
+        )}
+
+        {/* View Product Modal (Read-only) */}
+        {showViewModal && selectedProduct && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl overflow-hidden">
+              <div className="relative">
+                <img 
+                  src={selectedProduct.image} 
+                  alt={selectedProduct.name}
+                  className="w-full h-64 object-cover"
+                />
+                <button 
+                  onClick={() => setShowViewModal(false)} 
+                  className="absolute top-4 right-4 bg-white text-gray-700 hover:text-gray-900 p-2 rounded-full shadow-lg transition"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-8">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h2 className="text-3xl font-bold text-gray-800 mb-2">{selectedProduct.name}</h2>
+                    <span className="inline-block px-3 py-1 bg-secondary text-white rounded-full text-sm font-bold">
+                      {selectedProduct.type}
+                    </span>
+                  </div>
+                  <span className={`px-4 py-2 rounded-full text-sm font-bold ${
+                    selectedProduct.stock === 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                  }`}>
+                    {selectedProduct.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6 mb-6">
+                  <div className="bg-gray-50 rounded-lg p-5 border-l-4 border-primary">
+                    <p className="text-sm text-gray-600 mb-1">Price</p>
+                    <p className="text-3xl font-bold text-primary">₱{selectedProduct.price}</p>
+                    <p className="text-sm text-gray-500">per kilogram</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-5 border-l-4 border-blue-500">
+                    <p className="text-sm text-gray-600 mb-1">Stock Available</p>
+                    <p className="text-3xl font-bold text-gray-800">{selectedProduct.stock}</p>
+                    <p className="text-sm text-gray-500">kilograms</p>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 rounded-lg p-5 mb-6 border-l-4 border-yellow-500">
+                  <p className="text-sm text-gray-600 mb-2">Customer Rating</p>
+                  <div className="flex items-center">
+                    <span className="text-4xl font-bold text-gray-800 mr-2">{selectedProduct.rating}</span>
+                    <div>
+                      <div className="text-yellow-500 text-xl">⭐⭐⭐⭐⭐</div>
+                      <p className="text-sm text-gray-600">{selectedProduct.reviews} customer reviews</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">Description</h3>
+                  <p className="text-gray-600 leading-relaxed">{selectedProduct.description}</p>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button 
+                    onClick={() => {
+                      setShowViewModal(false);
+                      handleEditProduct(selectedProduct);
+                    }}
+                    className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 rounded-lg font-bold transition"
+                  >
+                    Edit Product
+                  </button>
+                  <button 
+                    onClick={() => setShowViewModal(false)}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-bold transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toast Notification */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
         )}
       </div>
     </div>

@@ -18,7 +18,17 @@ const Navbar = ({ isLanding = false, userType = null }) => {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition">
-            <div className="w-14 h-14 bg-gradient-to-br from-secondary to-secondary-light rounded-full flex items-center justify-center shadow-lg">
+            <img 
+              src="/logo/ani2table-logo.png" 
+              alt="Ani2Table Logo" 
+              className="w-14 h-14 rounded-full shadow-lg object-cover"
+              onError={(e) => {
+                // Fallback if image doesn't load
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <div className="w-14 h-14 bg-gradient-to-br from-secondary to-secondary-light rounded-full items-center justify-center shadow-lg" style={{display: 'none'}}>
               <span className="text-white font-bold text-2xl">A</span>
             </div>
             <span className="font-bold text-2xl">ANI2TABLE</span>
@@ -34,13 +44,13 @@ const Navbar = ({ isLanding = false, userType = null }) => {
                 <div className="flex space-x-4 ml-6">
                   <Link 
                     to="/login" 
-                    className="bg-white/10 hover:bg-white/20 backdrop-blur-sm px-6 py-3 rounded-lg transition font-bold border border-white/20"
+                    className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg transition font-bold shadow-lg"
                   >
                     Login
                   </Link>
                   <Link 
                     to="/signup" 
-                    className="bg-secondary hover:bg-secondary-light px-6 py-3 rounded-lg transition font-bold shadow-lg"
+                    className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg transition font-bold shadow-lg"
                   >
                     Sign up
                   </Link>
@@ -90,10 +100,10 @@ const Navbar = ({ isLanding = false, userType = null }) => {
                 <Link to="/" className="block py-3 hover:text-secondary transition font-bold text-lg">HOME</Link>
                 <Link to="/products" className="block py-3 hover:text-secondary transition font-bold text-lg">PRODUCTS</Link>
                 <a href="#about" className="block py-3 hover:text-secondary transition font-bold text-lg">ABOUT</a>
-                <Link to="/login" className="block py-3 mt-3 bg-white/10 hover:bg-white/20 px-5 rounded-lg transition font-bold text-center">
+                <Link to="/login" className="block py-3 mt-3 bg-green-600 hover:bg-green-700 px-5 rounded-lg transition font-bold text-center">
                   Login
                 </Link>
-                <Link to="/signup" className="block py-3 mt-3 bg-secondary hover:bg-secondary-light px-5 rounded-lg transition font-bold text-center">
+                <Link to="/signup" className="block py-3 mt-3 bg-green-600 hover:bg-green-700 px-5 rounded-lg transition font-bold text-center">
                   Sign up
                 </Link>
               </>
