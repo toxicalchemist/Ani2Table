@@ -18,7 +18,7 @@ const FarmerDashboard = () => {
   const recentOrders = [
     { id: '#ORD-045', customer: 'Juan Dela Cruz', product: 'Jasmine Rice 10kg', amount: 450, status: 'Delivered' },
     { id: '#ORD-046', customer: 'Maria Santos', product: 'Brown Rice 5kg', amount: 250, status: 'In Transit' },
-    { id: '#ORD-047', customer: 'Pedro Garcia', product: 'Sinandomeng 15kg', amount: 600, status: 'Processing' },
+    { id: '#ORD-047', customer: 'Penduco Garcia', product: 'Sinandomeng 15kg', amount: 600, status: 'Processing' },
   ];
 
   return (
