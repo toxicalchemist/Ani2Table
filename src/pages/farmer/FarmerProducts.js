@@ -1,43 +1,131 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import ProductCard from '../../components/ProductCard';
 import Toast from '../../components/Toast';
+import { getAllProducts, createProduct, updateProduct, deleteProduct } from '../../services/productService';
+import { getCurrentUser } from '../../services/authService';
 
 const FarmerProducts = () => {
-  const [products] = useState([
-    { id: 1, name: 'Jasmine Rice', type: 'Premium', price: 45, stock: 500, status: 'In Stock', rating: 4.8, reviews: 245, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Premium quality jasmine rice with aromatic fragrance. Perfect for special occasions and everyday meals.' },
-    { id: 2, name: 'Sinandomeng Rice', type: 'Regular', price: 40, stock: 750, status: 'In Stock', rating: 4.6, reviews: 189, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Classic Filipino rice variety. Great taste and texture for daily consumption.' },
-    { id: 3, name: 'Brown Rice', type: 'Organic', price: 50, stock: 0, status: 'Out of Stock', rating: 4.9, reviews: 312, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Organic brown rice rich in fiber and nutrients. Healthy choice for wellness-focused consumers.' },
-    { id: 4, name: 'Black Rice', type: 'Premium', price: 60, stock: 200, status: 'In Stock', rating: 4.7, reviews: 156, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Rare black rice variety with high antioxidants. Distinctive color and nutty flavor.' },
-    { id: 5, name: 'Sticky Rice', type: 'Specialty', price: 55, stock: 85, status: 'In Stock', rating: 4.8, reviews: 203, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Traditional glutinous rice perfect for desserts and special dishes.' },
-    { id: 6, name: 'Red Rice', type: 'Organic', price: 52, stock: 420, status: 'In Stock', rating: 4.5, reviews: 127, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Nutrient-dense red rice with natural antioxidants and earthy flavor.' },
-    { id: 7, name: 'Organic White Rice', type: 'Organic', price: 47, stock: 95, status: 'In Stock', rating: 4.7, reviews: 178, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Certified organic white rice grown without chemicals or pesticides.' },
-    { id: 8, name: 'Mixed Grain Rice', type: 'Specialty', price: 58, stock: 310, status: 'In Stock', rating: 4.6, reviews: 142, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Healthy blend of different rice varieties and whole grains for balanced nutrition.' },
-  ]);
-
+  const currentUser = getCurrentUser();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [toast, setToast] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    category: '',
+    price: '',
+    quantity: '',
+    unit: 'kg',
+    description: '',
+    status: 'available',
+    imageFile: null
+  });
+
+  // Load products on mount
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    setLoading(true);
+    const result = await getAllProducts({ farmerId: currentUser?.id });
+    if (result.success) {
+      setProducts(result.products);
+    } else {
+      setToast({ message: result.error || 'Failed to load products', type: 'error' });
+    }
+    setLoading(false);
+  };
 
   // Check for low stock products
-  const lowStockProducts = products.filter(p => p.stock > 0 && p.stock < 100);
-  const outOfStockProducts = products.filter(p => p.stock === 0);
+  const lowStockProducts = products.filter(p => p.quantity > 0 && p.quantity < 100);
+  const outOfStockProducts = products.filter(p => p.quantity === 0);
 
   const handleEditProduct = (product) => {
     setSelectedProduct(product);
+    setFormData({
+      name: product.name,
+      category: product.category,
+      price: product.price,
+      quantity: product.quantity,
+      unit: product.unit || 'kg',
+      description: product.description || '',
+      status: product.status
+    });
     setShowModal(true);
   };
 
-  const handleUpdateProduct = (e) => {
-    e.preventDefault();
-    setShowModal(false);
-    setToast({ message: 'Product updated successfully!', type: 'success' });
+  const handleFormChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
-  const handleDeleteProduct = (productName) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    // Create FormData object for multipart upload
+    const submitData = new FormData();
+    submitData.append('name', formData.name);
+    submitData.append('category', formData.category);
+    submitData.append('price', formData.price);
+    submitData.append('quantity', formData.quantity);
+    submitData.append('unit', formData.unit || 'kg');
+    submitData.append('description', formData.description || '');
+    submitData.append('status', formData.status);
+    
+    // Add image file if selected
+    if (formData.imageFile) {
+      submitData.append('image', formData.imageFile);
+    }
+    
+    let result;
+    if (selectedProduct) {
+      // Update existing product
+      result = await updateProduct(selectedProduct.id, submitData);
+    } else {
+      // Create new product
+      result = await createProduct(submitData);
+    }
+    
+    if (result.success) {
+      setToast({ 
+        message: selectedProduct ? 'Product updated successfully!' : 'Product added successfully!', 
+        type: 'success' 
+      });
+      setShowModal(false);
+      setSelectedProduct(null);
+      setFormData({
+        name: '',
+        category: '',
+        price: '',
+        quantity: '',
+        unit: 'kg',
+        description: '',
+        status: 'available',
+        imageFile: null
+      });
+      await loadProducts();
+    } else {
+      setToast({ message: result.error || 'Operation failed', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleDeleteProduct = async (productId, productName) => {
     if (window.confirm(`Are you sure you want to delete ${productName}?`)) {
-      setToast({ message: `${productName} has been deleted`, type: 'error' });
+      const result = await deleteProduct(productId);
+      if (result.success) {
+        setToast({ message: `${productName} has been deleted`, type: 'success' });
+        await loadProducts();
+      } else {
+        setToast({ message: result.error || 'Failed to delete product', type: 'error' });
+      }
     }
   };
 
@@ -95,7 +183,19 @@ const FarmerProducts = () => {
             <p className="text-gray-600">Manage your rice products and inventory</p>
           </div>
           <button 
-            onClick={() => { setSelectedProduct(null); setShowModal(true); }}
+            onClick={() => { 
+              setSelectedProduct(null); 
+              setFormData({
+                name: '',
+                category: '',
+                price: '',
+                quantity: '',
+                unit: 'kg',
+                description: '',
+                status: 'available'
+              });
+              setShowModal(true); 
+            }}
             className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-bold transition flex items-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,50 +301,107 @@ const FarmerProducts = () => {
                   </svg>
                 </button>
               </div>
-              <form onSubmit={handleUpdateProduct} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Product Name</label>
+                  <label className="block text-sm font-medium mb-1">Product Name *</label>
                   <input 
                     type="text" 
-                    defaultValue={selectedProduct?.name}
+                    name="name"
+                    value={formData.name}
+                    onChange={handleFormChange}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary" 
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Type</label>
+                  <label className="block text-sm font-medium mb-1">Category *</label>
+                  <input 
+                    type="text" 
+                    name="category"
+                    value={formData.category}
+                    onChange={handleFormChange}
+                    placeholder="e.g. Rice, Vegetables, Fruits"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Price (₱) *</label>
+                  <input 
+                    type="number" 
+                    name="price"
+                    value={formData.price}
+                    onChange={handleFormChange}
+                    step="0.01"
+                    min="0"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary" 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Quantity *</label>
+                    <input 
+                      type="number" 
+                      name="quantity"
+                      value={formData.quantity}
+                      onChange={handleFormChange}
+                      min="0"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Unit</label>
+                    <select 
+                      name="unit"
+                      value={formData.unit}
+                      onChange={handleFormChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary"
+                    >
+                      <option value="kg">kg</option>
+                      <option value="g">g</option>
+                      <option value="pcs">pcs</option>
+                      <option value="box">box</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Status</label>
                   <select 
-                    defaultValue={selectedProduct?.type}
+                    name="status"
+                    value={formData.status}
+                    onChange={handleFormChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary"
                   >
-                    <option>Premium</option>
-                    <option>Regular</option>
-                    <option>Organic</option>
-                    <option>Specialty</option>
+                    <option value="available">Available</option>
+                    <option value="out_of_stock">Out of Stock</option>
+                    <option value="discontinued">Discontinued</option>
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Price (per kg)</label>
-                  <input 
-                    type="number" 
-                    defaultValue={selectedProduct?.price}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Stock (kg)</label>
-                  <input 
-                    type="number" 
-                    defaultValue={selectedProduct?.stock}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary" 
-                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Description</label>
                   <textarea 
+                    name="description"
+                    value={formData.description}
+                    onChange={handleFormChange}
                     rows="3"
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary"
                     placeholder="Describe your product..."
                   ></textarea>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Product Image</label>
+                  <input 
+                    type="file"
+                    name="image"
+                    accept="image/*"
+                    onChange={(e) => setFormData({...formData, imageFile: e.target.files[0]})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary"
+                  />
+                  {formData.imageFile && (
+                    <p className="text-sm text-gray-600 mt-1">Selected: {formData.imageFile.name}</p>
+                  )}
                 </div>
                 <div className="flex space-x-3 mt-6">
                   <button 
@@ -255,10 +412,11 @@ const FarmerProducts = () => {
                     Cancel
                   </button>
                   <button 
-                    type="submit" 
-                    className="flex-1 px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition"
+                    type="submit"
+                    disabled={loading}
+                    className={`flex-1 px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {selectedProduct ? 'Update' : 'Add'} Product
+                    {loading ? 'Saving...' : (selectedProduct ? 'Update Product' : 'Add Product')}
                   </button>
                 </div>
               </form>
@@ -272,7 +430,7 @@ const FarmerProducts = () => {
             <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl overflow-hidden">
               <div className="relative">
                 <img 
-                  src={selectedProduct.image} 
+                  src={selectedProduct.imageUrl ? `http://localhost:5000${selectedProduct.imageUrl}` : selectedProduct.image || '/placeholder-rice.jpg'} 
                   alt={selectedProduct.name}
                   className="w-full h-64 object-cover"
                 />

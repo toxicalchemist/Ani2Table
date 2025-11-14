@@ -44,13 +44,13 @@ const Navbar = ({ isLanding = false, userType = null }) => {
                 <div className="flex space-x-4 ml-6">
                   <Link 
                     to="/login" 
-                    className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg transition font-bold shadow-lg"
+                    className="bg-secondary hover:bg-secondary-dark px-6 py-3 rounded-lg transition font-bold shadow-lg"
                   >
                     Login
                   </Link>
                   <Link 
                     to="/signup" 
-                    className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg transition font-bold shadow-lg"
+                    className="bg-secondary hover:bg-secondary-dark px-6 py-3 rounded-lg transition font-bold shadow-lg"
                   >
                     Sign up
                   </Link>
@@ -59,7 +59,7 @@ const Navbar = ({ isLanding = false, userType = null }) => {
             ) : (
               <>
                 <Link to={`/${userType}`} className="hover:text-secondary transition font-bold text-lg">DASHBOARD</Link>
-                {currentUser && (
+                {currentUser && currentUser.firstName && (
                   <span className="text-secondary font-bold text-lg">
                     Welcome, {currentUser.firstName}!
                   </span>
@@ -100,10 +100,10 @@ const Navbar = ({ isLanding = false, userType = null }) => {
                 <Link to="/" className="block py-3 hover:text-secondary transition font-bold text-lg">HOME</Link>
                 <Link to="/products" className="block py-3 hover:text-secondary transition font-bold text-lg">PRODUCTS</Link>
                 <a href="#about" className="block py-3 hover:text-secondary transition font-bold text-lg">ABOUT</a>
-                <Link to="/login" className="block py-3 mt-3 bg-green-600 hover:bg-green-700 px-5 rounded-lg transition font-bold text-center">
+                <Link to="/login" className="block py-3 mt-3 bg-secondary hover:bg-secondary-dark px-5 rounded-lg transition font-bold text-center">
                   Login
                 </Link>
-                <Link to="/signup" className="block py-3 mt-3 bg-green-600 hover:bg-green-700 px-5 rounded-lg transition font-bold text-center">
+                <Link to="/signup" className="block py-3 mt-3 bg-secondary hover:bg-secondary-dark px-5 rounded-lg transition font-bold text-center">
                   Sign up
                 </Link>
               </>

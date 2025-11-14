@@ -1,211 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
+import Toast from '../../components/Toast';
+import { getOrders } from '../../services/orderService';
 
 const AdminTransactions = () => {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
 
-  const transactions = [
-    { 
-      id: 'TXN-001', 
-      orderId: 'ORD-001',
-      customer: 'Juan Dela Cruz', 
-      farmer: "Pedro's Farm",
-      amount: 450, 
-      paymentMethod: 'GCash',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Delivered',
-      date: '2024-11-01',
-      time: '10:30 AM'
-    },
-    { 
-      id: 'TXN-002', 
-      orderId: 'ORD-002',
-      customer: 'Maria Santos', 
-      farmer: 'Santos Farm',
-      amount: 250, 
-      paymentMethod: 'Cash on Delivery',
-      paymentStatus: 'Pending',
-      deliveryStatus: 'In Transit',
-      date: '2024-11-02',
-      time: '02:15 PM'
-    },
-    { 
-      id: 'TXN-003', 
-      orderId: 'ORD-003',
-      customer: 'Pedro Garcia', 
-      farmer: 'Garcia Farm',
-      amount: 800, 
-      paymentMethod: 'Bank Transfer',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Processing',
-      date: '2024-11-03',
-      time: '09:45 AM'
-    },
-    { 
-      id: 'TXN-004', 
-      orderId: 'ORD-004',
-      customer: 'Ana Lopez', 
-      farmer: 'Lopez Farm',
-      amount: 675, 
-      paymentMethod: 'PayMaya',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Pending',
-      date: '2024-11-04',
-      time: '11:20 AM'
-    },
-    { 
-      id: 'TXN-005', 
-      orderId: 'ORD-005',
-      customer: 'Carlos Reyes', 
-      farmer: 'Reyes Farm',
-      amount: 480, 
-      paymentMethod: 'GCash',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Delivered',
-      date: '2024-10-30',
-      time: '03:00 PM'
-    },
-    { 
-      id: 'TXN-006', 
-      orderId: 'ORD-006',
-      customer: 'Elena Cruz', 
-      farmer: 'Cruz Farm',
-      amount: 920, 
-      paymentMethod: 'GCash',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Delivered',
-      date: '2024-10-28',
-      time: '01:45 PM'
-    },
-    { 
-      id: 'TXN-007', 
-      orderId: 'ORD-007',
-      customer: 'Roberto Diaz', 
-      farmer: 'Diaz Farm',
-      amount: 340, 
-      paymentMethod: 'Cash on Delivery',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Delivered',
-      date: '2024-10-27',
-      time: '04:20 PM'
-    },
-    { 
-      id: 'TXN-008', 
-      orderId: 'ORD-008',
-      customer: 'Sofia Mendez', 
-      farmer: 'Mendoza Farm',
-      amount: 1150, 
-      paymentMethod: 'Bank Transfer',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Delivered',
-      date: '2024-10-26',
-      time: '10:00 AM'
-    },
-    { 
-      id: 'TXN-009', 
-      orderId: 'ORD-009',
-      customer: 'Miguel Torres', 
-      farmer: 'Torres Farm',
-      amount: 560, 
-      paymentMethod: 'PayMaya',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Delivered',
-      date: '2024-10-25',
-      time: '08:30 AM'
-    },
-    { 
-      id: 'TXN-010', 
-      orderId: 'ORD-010',
-      customer: 'Isabel Ramos', 
-      farmer: 'Santos Farm',
-      amount: 780, 
-      paymentMethod: 'GCash',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'In Transit',
-      date: '2024-11-05',
-      time: '02:50 PM'
-    },
-    { 
-      id: 'TXN-011', 
-      orderId: 'ORD-011',
-      customer: 'Diego Fernandez', 
-      farmer: 'Fernandez Farm',
-      amount: 425, 
-      paymentMethod: 'Cash on Delivery',
-      paymentStatus: 'Pending',
-      deliveryStatus: 'Processing',
-      date: '2024-11-05',
-      time: '11:15 AM'
-    },
-    { 
-      id: 'TXN-012', 
-      orderId: 'ORD-012',
-      customer: 'Carmen Villanueva', 
-      farmer: 'Villanueva Farm',
-      amount: 890, 
-      paymentMethod: 'Bank Transfer',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Delivered',
-      date: '2024-10-24',
-      time: '09:00 AM'
-    },
-    { 
-      id: 'TXN-013', 
-      orderId: 'ORD-013',
-      customer: 'Luis Aquino', 
-      farmer: 'Aquino Farm',
-      amount: 650, 
-      paymentMethod: 'GCash',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Delivered',
-      date: '2024-10-23',
-      time: '03:30 PM'
-    },
-    { 
-      id: 'TXN-014', 
-      orderId: 'ORD-014',
-      customer: 'Rosa Martinez', 
-      farmer: 'Garcia Farm',
-      amount: 510, 
-      paymentMethod: 'PayMaya',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'In Transit',
-      date: '2024-11-05',
-      time: '01:00 PM'
-    },
-    { 
-      id: 'TXN-015', 
-      orderId: 'ORD-015',
-      customer: 'Fernando Silva', 
-      farmer: 'Lopez Farm',
-      amount: 975, 
-      paymentMethod: 'GCash',
-      paymentStatus: 'Paid',
-      deliveryStatus: 'Processing',
-      date: '2024-11-06',
-      time: '10:45 AM'
-    },
-  ];
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  const loadTransactions = async () => {
+    setLoading(true);
+    const result = await getOrders();
+    if (result.success) {
+      // Map orders to transaction format
+      const txns = result.orders.map(order => ({
+        id: `TXN-${order.id}`,
+        orderId: order.id,
+        customer: order.consumerName,
+        farmer: order.items[0]?.farmerName || 'N/A',
+        amount: order.totalAmount,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        deliveryStatus: order.status,
+        date: new Date(order.createdAt).toLocaleDateString(),
+        time: new Date(order.createdAt).toLocaleTimeString()
+      }));
+      setTransactions(txns);
+    } else {
+      setToast({ message: result.error || 'Failed to load transactions', type: 'error' });
+    }
+    setLoading(false);
+  };
 
   const getPaymentStatusColor = (status) => {
-    switch (status) {
-      case 'Paid': return 'bg-green-100 text-green-800';
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Failed': return 'bg-red-100 text-red-800';
+    const statusLower = status?.toLowerCase() || '';
+    switch (statusLower) {
+      case 'paid': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'failed': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getDeliveryStatusColor = (status) => {
     switch (status) {
-      case 'Delivered': return 'bg-green-100 text-green-800';
-      case 'In Transit': return 'bg-blue-100 text-blue-800';
-      case 'Processing': return 'bg-yellow-100 text-yellow-800';
-      case 'Pending': return 'bg-orange-100 text-orange-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'shipped': return 'bg-blue-100 text-blue-800';
+      case 'processing': return 'bg-yellow-100 text-yellow-800';
+      case 'pending': return 'bg-orange-100 text-orange-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-100">
+        <Sidebar userType="admin" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading transactions...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const filteredTransactions = transactions.filter(txn => {
     const matchesFilter = filter === 'all' || txn.deliveryStatus.toLowerCase() === filter;
@@ -407,6 +273,15 @@ const AdminTransactions = () => {
           </table>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

@@ -1,39 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Toast from '../../components/Toast';
+import { getCart, updateCartItem, removeFromCart, clearCart } from '../../services/cartService';
+import { createOrder } from '../../services/orderService';
 
 const ConsumerCart = () => {
-  const [cartItems, setCartItems] = useState([
-    { id: 1, name: 'Jasmine Rice', price: 45, quantity: 10, farmer: "Pedro's Farm", image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200' },
-    { id: 2, name: 'Brown Rice', price: 50, quantity: 5, farmer: "Garcia Farm", image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200' },
-    { id: 3, name: 'Sinandomeng Rice', price: 40, quantity: 15, farmer: "Santos Farm", image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200' },
-  ]);
-
+  const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [showNotification, setShowNotification] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const handleCheckout = () => {
-    setShowNotification(true);
-    setToast({ message: 'Order placed successfully! Your order is being processed.', type: 'success' });
-    setTimeout(() => {
-      setShowNotification(false);
-    }, 5000);
+  useEffect(() => {
+    loadCart();
+  }, []);
+
+  const loadCart = async () => {
+    setLoading(true);
+    const result = await getCart();
+    if (result.success) {
+      // Map API response to expected format
+      const items = (result.cartItems || []).map(item => ({
+        id: item.id,
+        productId: item.product.id,
+        productName: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+        unit: item.product.unit,
+        imageUrl: item.product.imageUrl,
+        farmerName: item.product.farmerName
+      }));
+      setCartItems(items);
+    } else {
+      setToast({ message: result.error || 'Failed to load cart', type: 'error' });
+    }
+    setLoading(false);
   };
 
-  const updateQuantity = (id, newQuantity) => {
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) {
+      setToast({ message: 'Your cart is empty', type: 'warning' });
+      return;
+    }
+
+    setLoading(true);
+    const orderData = {
+      paymentMethod,
+      deliveryAddress: 'Default Address', // You can add address input
+      notes: ''
+    };
+
+    const result = await createOrder(orderData);
+    if (result.success) {
+      setShowNotification(true);
+      setToast({ message: 'Order placed successfully! Your order is being processed.', type: 'success' });
+      setTimeout(() => {
+        setShowNotification(false);
+      }, 5000);
+      await loadCart(); // Reload cart (should be empty after checkout)
+    } else {
+      setToast({ message: result.error || 'Failed to place order', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const updateQuantity = async (cartItemId, newQuantity) => {
     if (newQuantity > 0) {
-      setCartItems(cartItems.map(item => 
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      ));
-      setToast({ message: 'Cart updated', type: 'info' });
+      const result = await updateCartItem(cartItemId, newQuantity);
+      if (result.success) {
+        setToast({ message: 'Cart updated', type: 'info' });
+        await loadCart();
+      } else {
+        setToast({ message: result.error || 'Failed to update cart', type: 'error' });
+      }
     }
   };
 
-  const removeItem = (id) => {
-    const item = cartItems.find(item => item.id === id);
-    setCartItems(cartItems.filter(item => item.id !== id));
-    setToast({ message: `${item.name} removed from cart`, type: 'warning' });
+  const removeItem = async (cartItemId) => {
+    const item = cartItems.find(item => item.id === cartItemId);
+    const result = await removeFromCart(cartItemId);
+    if (result.success) {
+      setToast({ message: `${item?.productName || 'Item'} removed from cart`, type: 'warning' });
+      await loadCart();
+    } else {
+      setToast({ message: result.error || 'Failed to remove item', type: 'error' });
+    }
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);

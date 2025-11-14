@@ -1,32 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import ProductCard from '../../components/ProductCard';
 import Toast from '../../components/Toast';
+import { getAllProducts, deleteProduct, updateProductStatus } from '../../services/productService';
 
 const AdminProducts = () => {
-  const [products] = useState([
-    { id: 1, name: 'Jasmine Rice', type: 'Premium', price: 45, stock: 500, status: 'In Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Premium fragrant jasmine rice' },
-    { id: 2, name: 'Sinandomeng Rice', type: 'Regular', price: 40, stock: 750, status: 'In Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Traditional Filipino variety' },
-    { id: 3, name: 'Brown Rice', type: 'Organic', price: 50, stock: 0, status: 'Out of Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Nutritious whole grain rice' },
-    { id: 4, name: 'Black Rice', type: 'Premium', price: 60, stock: 200, status: 'In Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Antioxidant-rich specialty rice' },
-    { id: 5, name: 'Sticky Rice', type: 'Specialty', price: 55, stock: 150, status: 'In Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Perfect for desserts and Asian dishes' },
-    { id: 6, name: 'Dinorado Rice', type: 'Premium', price: 48, stock: 0, status: 'Out of Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Sweet and fluffy premium variety' },
-    { id: 7, name: 'Red Rice', type: 'Organic', price: 52, stock: 85, status: 'In Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Nutrient-dense red rice variety' },
-    { id: 8, name: 'Organic White Rice', type: 'Organic', price: 47, stock: 620, status: 'In Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Certified organic white rice' },
-    { id: 9, name: 'Premium Malagkit', type: 'Specialty', price: 52, stock: 45, status: 'In Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'High-quality glutinous rice' },
-    { id: 10, name: 'Mixed Grain Rice', type: 'Specialty', price: 58, stock: 310, status: 'In Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Healthy blend of rice varieties' },
-    { id: 11, name: 'Basmati Rice', type: 'Premium', price: 65, stock: 95, status: 'In Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Long-grain aromatic rice' },
-    { id: 12, name: 'Sushi Rice', type: 'Specialty', price: 62, stock: 180, status: 'In Stock', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Short-grain Japanese style rice' },
-  ]);
-
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [toast, setToast] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  // Check for low stock or out of stock items
-  const lowStockProducts = products.filter(p => p.stock > 0 && p.stock < 100);
-  const outOfStockProducts = products.filter(p => p.stock === 0);
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    setLoading(true);
+    const result = await getAllProducts();
+    if (result.success) {
+      console.log('Loaded products:', result.products);
+      console.log('Product statuses:', result.products.map(p => ({ id: p.id, name: p.name, status: p.status })));
+      setProducts(result.products);
+    } else {
+      setToast({ message: result.error || 'Failed to load products', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleApproveProduct = async (productId, productName) => {
+    console.log('Approving product:', productId, productName);
+    const result = await updateProductStatus(productId, 'available');
+    console.log('Approve result:', result);
+    if (result.success) {
+      setToast({ message: `${productName} has been approved!`, type: 'success' });
+      await loadProducts();
+    } else {
+      setToast({ message: result.error || 'Failed to approve product', type: 'error' });
+    }
+  };
+
+  const handleRejectProduct = async (productId, productName) => {
+    if (window.confirm(`Are you sure you want to reject ${productName}?`)) {
+      const result = await updateProductStatus(productId, 'rejected');
+      if (result.success) {
+        setToast({ message: `${productName} has been rejected`, type: 'error' });
+        await loadProducts();
+      } else {
+        setToast({ message: result.error || 'Failed to reject product', type: 'error' });
+      }
+    }
+  };
+
+  // Filter products based on status
+  const pendingProducts = products.filter(p => p.status === 'pending');
+  const approvedProducts = products.filter(p => p.status === 'available');
+  const rejectedProducts = products.filter(p => p.status === 'rejected');
+  
+  const filteredProducts = statusFilter === 'all' ? products :
+                          statusFilter === 'pending' ? pendingProducts :
+                          statusFilter === 'approved' ? approvedProducts :
+                          rejectedProducts;
+
+  // Check for low stock or out of stock items (only approved products)
+  const lowStockProducts = approvedProducts.filter(p => p.quantity > 0 && p.quantity < 100);
+  const outOfStockProducts = approvedProducts.filter(p => p.quantity === 0);
 
   const handleEditProduct = (product) => {
     setSelectedProduct(product);
@@ -45,9 +85,15 @@ const AdminProducts = () => {
     setToast({ message: 'Product added successfully!', type: 'success' });
   };
 
-  const handleDeleteProduct = (productName) => {
+  const handleDeleteProduct = async (productId, productName) => {
     if (window.confirm(`Are you sure you want to delete ${productName}?`)) {
-      setToast({ message: `${productName} has been deleted`, type: 'error' });
+      const result = await deleteProduct(productId);
+      if (result.success) {
+        setToast({ message: `${productName} has been deleted`, type: 'success' });
+        await loadProducts();
+      } else {
+        setToast({ message: result.error || 'Failed to delete product', type: 'error' });
+      }
     }
   };
 
@@ -56,6 +102,25 @@ const AdminProducts = () => {
       <Sidebar userType="admin" />
       
       <div className="flex-1 p-8">
+        {/* Pending Products Alert */}
+        {pendingProducts.length > 0 && (
+          <div className="mb-6">
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow">
+              <div className="flex items-start">
+                <svg className="w-6 h-6 text-blue-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <h3 className="font-bold text-blue-800 text-lg">Pending Product Approvals</h3>
+                  <p className="text-blue-700 mt-1">
+                    {pendingProducts.length} product(s) waiting for your approval
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Low Stock Alert */}
         {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
           <div className="mb-6 space-y-3">
@@ -97,69 +162,151 @@ const AdminProducts = () => {
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Product Management</h1>
-            <p className="text-gray-600">Manage all rice products in the system</p>
+            <p className="text-gray-600">
+              Review and manage farmer product submissions ({pendingProducts.length} pending, {approvedProducts.length} approved)
+            </p>
           </div>
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg font-bold transition flex items-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Add Product</span>
-          </button>
         </div>
 
-        {/* Filter and Search */}
+        {/* Filter Tabs */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-wrap gap-4">
-            <input
-              type="text"
-              placeholder="Search products..."
-              className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary"
-            />
-            <select className="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
-              <option value="">All Categories</option>
-              <option value="premium">Premium</option>
-              <option value="regular">Regular</option>
-              <option value="organic">Organic</option>
-              <option value="specialty">Specialty</option>
-            </select>
-            <select className="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-primary">
-              <option value="">All Status</option>
-              <option value="in-stock">In Stock</option>
-              <option value="out-of-stock">Out of Stock</option>
-            </select>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-6 py-2 rounded-lg font-semibold transition ${
+                statusFilter === 'all'
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              All Products ({products.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={`px-6 py-2 rounded-lg font-semibold transition ${
+                statusFilter === 'pending'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Pending ({pendingProducts.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('approved')}
+              className={`px-6 py-2 rounded-lg font-semibold transition ${
+                statusFilter === 'approved'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Approved ({approvedProducts.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('rejected')}
+              className={`px-6 py-2 rounded-lg font-semibold transition ${
+                statusFilter === 'rejected'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Rejected ({rejectedProducts.length})
+            </button>
           </div>
         </div>
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <div key={product.id} className="relative">
-              {/* Edit/Delete buttons on the left */}
-              <div className="absolute top-2 left-2 flex flex-col space-y-2 z-10">
-                <button 
-                  onClick={() => handleEditProduct(product)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-                <button 
-                  onClick={() => handleDeleteProduct(product.name)}
-                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+          {filteredProducts.map((product) => (
+            <div key={product.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="relative">
+                <img 
+                  src={product.imageUrl ? `http://localhost:5000${product.imageUrl}` : 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500'} 
+                  alt={product.name}
+                  className="w-full h-48 object-cover"
+                />
+                <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold ${
+                  product.status === 'pending' ? 'bg-blue-500 text-white' :
+                  product.status === 'available' ? 'bg-green-500 text-white' :
+                  'bg-red-500 text-white'
+                }`}>
+                  {product.status}
+                </span>
               </div>
-              <ProductCard product={product} />
+              <div className="p-5">
+                <h3 className="font-bold text-xl text-gray-800 mb-2">{product.name}</h3>
+                <p className="text-sm text-gray-600 mb-2">{product.description}</p>
+                <p className="text-sm text-gray-600 mb-3">
+                  <span className="font-semibold">Farmer:</span> {product.farmerName}
+                </p>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-2xl font-bold text-primary">₱{product.price}</span>
+                  <span className="text-gray-600">Stock: {product.quantity} {product.unit}</span>
+                </div>
+                
+                {/* Action Buttons */}
+                {product.status === 'pending' && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApproveProduct(product.id, product.name)}
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-bold transition flex items-center justify-center"
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleRejectProduct(product.id, product.name)}
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-bold transition flex items-center justify-center"
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Reject
+                    </button>
+                  </div>
+                )}
+                
+                {product.status === 'available' && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleDeleteProduct(product.id, product.name)}
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-bold transition"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+                
+                {product.status === 'rejected' && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApproveProduct(product.id, product.name)}
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-bold transition"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProduct(product.id, product.name)}
+                      className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg font-bold transition"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
+
+        {filteredProducts.length === 0 && (
+          <div className="text-center py-12">
+            <svg className="w-24 h-24 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <p className="text-xl text-gray-600">No products found</p>
+          </div>
+        )}
 
         {/* Add Product Modal */}
         {showAddModal && (

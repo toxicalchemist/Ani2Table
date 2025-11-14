@@ -18,6 +18,7 @@ const Sidebar = ({ userType }) => {
     { name: 'Analytics & Report', path: '/admin/analytics', icon: '📊' },
     { name: 'Order Status', path: '/admin/orders', icon: '📋' },
     { name: 'Transaction & Delivery', path: '/admin/transactions', icon: '🚚' },
+    { name: 'User Management', path: '/admin/users', icon: '👥' },
   ];
 
   const farmerLinks = [
@@ -52,10 +53,10 @@ const Sidebar = ({ userType }) => {
       </div>
 
       {/* User Info */}
-      {currentUser && (
+      {currentUser && currentUser.userType && (
         <div className="mb-6 px-4 py-3 bg-primary-dark rounded-lg">
           <p className="text-sm text-gray-300">Logged in as</p>
-          <p className="font-semibold text-secondary">{currentUser.firstName} {currentUser.lastName}</p>
+          <p className="font-semibold text-secondary">{currentUser.firstName || 'User'} {currentUser.lastName || ''}</p>
           <p className="text-xs text-gray-400 capitalize">{currentUser.userType}</p>
         </div>
       )}

@@ -1,32 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
-import { getCurrentUser } from '../../services/authService';
+import Toast from '../../components/Toast';
+import { getCurrentUser, getProfile, updateProfile } from '../../services/authService';
 
 const FarmerProfile = () => {
   const currentUser = getCurrentUser();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
   const [profileData, setProfileData] = useState({
-    farmName: "Pedro's Rice Farm",
-    ownerName: `${currentUser?.firstName || 'Pedro'} ${currentUser?.lastName || 'Garcia'}`,
-    email: currentUser?.email || 'pedro@ani2table.com',
-    phone: currentUser?.contactNumber || '09123456789',
-    location: 'Nueva Ecija, Philippines',
-    established: '2010',
-    farmSize: '5 hectares',
-    bio: 'We are a family-owned rice farm committed to sustainable farming practices and producing high-quality rice varieties.',
-    certifications: ['Organic Certified', 'Good Agricultural Practices (GAP)'],
-    specialties: ['Jasmine Rice', 'Brown Rice', 'Sinandomeng Rice']
+    farmName: '',
+    ownerName: '',
+    email: '',
+    phone: '',
+    location: '',
+    established: '',
+    farmSize: '',
+    bio: '',
+    certifications: [],
+    specialties: []
   });
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    setLoading(true);
+    const result = await getProfile();
+    if (result.success && result.user) {
+      const user = result.user;
+      setProfileData({
+        farmName: user.farmName || `${user.firstName}'s Rice Farm`,
+        ownerName: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        phone: user.contactNumber || '',
+        location: user.address || '',
+        established: user.established || '2010',
+        farmSize: user.farmSize || '',
+        bio: user.bio || 'Family-owned rice farm committed to sustainable farming practices.',
+        certifications: user.certifications || [],
+        specialties: user.specialties || []
+      });
+    }
+    setLoading(false);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfileData({ ...profileData, [name]: value });
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Here you would typically save to backend/localStorage
-    alert('Profile updated successfully!');
+  const handleSave = async () => {
+    const result = await updateProfile({
+      contactNumber: profileData.phone,
+      address: profileData.location
+    });
+    
+    if (result.success) {
+      setToast({ message: 'Profile updated successfully!', type: 'success' });
+      setIsEditing(false);
+      await loadProfile();
+    } else {
+      setToast({ message: result.error || 'Failed to update profile', type: 'error' });
+    }
   };
 
   return (
@@ -34,10 +71,19 @@ const FarmerProfile = () => {
       <Sidebar userType="farmer" />
       
       <div className="flex-1 p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
-          <p className="text-gray-600">Manage your farm information and settings</p>
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading profile...</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
+              <p className="text-gray-600">Manage your farm information and settings</p>
+            </div>
 
         {/* Profile Header */}
         <div className="bg-gradient-to-r from-primary to-primary-dark text-white rounded-lg shadow-lg p-8 mb-6">
@@ -254,6 +300,17 @@ const FarmerProfile = () => {
               Save Changes
             </button>
           </div>
+        )}
+          </>
+        )}
+
+        {/* Toast Notification */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
         )}
       </div>
     </div>

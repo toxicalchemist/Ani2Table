@@ -10,6 +10,7 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminTransactions from './pages/admin/AdminTransactions';
+import AdminUsers from './pages/admin/AdminUsers';
 import FarmerDashboard from './pages/farmer/FarmerDashboard';
 import FarmerProducts from './pages/farmer/FarmerProducts';
 import FarmerOrders from './pages/farmer/FarmerOrders';
@@ -58,6 +59,11 @@ function App() {
         <Route path="/admin/transactions" element={
           <ProtectedRoute allowedTypes={['admin']}>
             <AdminTransactions />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/users" element={
+          <ProtectedRoute allowedTypes={['admin']}>
+            <AdminUsers />
           </ProtectedRoute>
         } />
         

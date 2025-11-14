@@ -1,0 +1,6 @@
+# Create the server .gitignore
+node_modules/
+.env
+*.log
+npm-debug.log*
+.DS_Store

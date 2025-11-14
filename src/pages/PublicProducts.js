@@ -1,206 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { Link } from 'react-router-dom';
+import { getAllProducts } from '../services/productService';
 
 const PublicProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('featured');
   const [searchQuery, setSearchQuery] = useState('');
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const products = [
-    {
-      id: 1,
-      name: 'Premium Jasmine Rice',
-      farmer: 'Santos Farm',
-      location: 'Nueva Ecija',
-      price: 45,
-      rating: 4.8,
-      reviews: 124,
-      category: 'jasmine',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Premium quality jasmine rice with aromatic fragrance',
-      stock: 'In Stock',
-      organic: true
-    },
-    {
-      id: 2,
-      name: 'Organic Brown Rice',
-      farmer: 'Garcia Farm',
-      location: 'Laguna',
-      price: 50,
-      rating: 4.9,
-      reviews: 89,
-      category: 'brown',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Nutritious organic brown rice, rich in fiber',
-      stock: 'In Stock',
-      organic: true
-    },
-    {
-      id: 3,
-      name: 'Sinandomeng Rice',
-      farmer: 'Reyes Farm',
-      location: 'Pangasinan',
-      price: 42,
-      rating: 4.7,
-      reviews: 156,
-      category: 'sinandomeng',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Traditional Filipino variety, perfect for everyday meals',
-      stock: 'In Stock',
-      organic: false
-    },
-    {
-      id: 4,
-      name: 'Dinorado Rice',
-      farmer: 'Cruz Farm',
-      location: 'Isabela',
-      price: 55,
-      rating: 4.9,
-      reviews: 98,
-      category: 'dinorado',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Premium quality, sweet and fluffy when cooked',
-      stock: 'In Stock',
-      organic: false
-    },
-    {
-      id: 5,
-      name: 'Red Rice',
-      farmer: 'Lopez Farm',
-      location: 'Batangas',
-      price: 60,
-      rating: 4.6,
-      reviews: 67,
-      category: 'specialty',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Healthy red rice packed with antioxidants',
-      stock: 'In Stock',
-      organic: true
-    },
-    {
-      id: 6,
-      name: 'Black Rice',
-      farmer: 'Mendoza Farm',
-      location: 'Benguet',
-      price: 65,
-      rating: 4.8,
-      reviews: 54,
-      category: 'specialty',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Rare black rice with high nutritional value',
-      stock: 'Limited Stock',
-      organic: true
-    },
-    {
-      id: 7,
-      name: 'Sticky Rice',
-      farmer: 'Torres Farm',
-      location: 'Baguio',
-      price: 48,
-      rating: 4.7,
-      reviews: 112,
-      category: 'sticky',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Perfect for desserts and traditional Filipino dishes',
-      stock: 'In Stock',
-      organic: false
-    },
-    {
-      id: 8,
-      name: 'Organic White Rice',
-      farmer: 'Fernandez Farm',
-      location: 'Tarlac',
-      price: 47,
-      rating: 4.8,
-      reviews: 143,
-      category: 'white',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Certified organic white rice, chemical-free',
-      stock: 'In Stock',
-      organic: true
-    },
-    {
-      id: 9,
-      name: 'Premium Malagkit',
-      farmer: 'Villanueva Farm',
-      location: 'Pampanga',
-      price: 52,
-      rating: 4.9,
-      reviews: 87,
-      category: 'sticky',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'High-quality glutinous rice for special occasions',
-      stock: 'In Stock',
-      organic: false
-    },
-    {
-      id: 10,
-      name: 'Mixed Grain Rice',
-      farmer: 'Aquino Farm',
-      location: 'Bulacan',
-      price: 58,
-      rating: 4.7,
-      reviews: 76,
-      category: 'specialty',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Healthy mix of different rice varieties and grains',
-      stock: 'In Stock',
-      organic: true
-    },
-    {
-      id: 11,
-      name: 'Premium Sinandomeng',
-      farmer: 'Santos Farm',
-      location: 'Nueva Ecija',
-      price: 46,
-      rating: 4.8,
-      reviews: 134,
-      category: 'sinandomeng',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Top-grade sinandomeng with excellent texture',
-      stock: 'In Stock',
-      organic: false
-    },
-    {
-      id: 12,
-      name: 'Organic Jasmine',
-      farmer: 'Garcia Farm',
-      location: 'Laguna',
-      price: 53,
-      rating: 4.9,
-      reviews: 165,
-      category: 'jasmine',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500',
-      description: 'Certified organic jasmine rice with natural aroma',
-      stock: 'In Stock',
-      organic: true
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    setLoading(true);
+    try {
+      // Only fetch approved/available products
+      const result = await getAllProducts({ status: 'available' });
+      if (result.success) {
+        setProducts(result.products || []);
+      } else {
+        console.error('Failed to load products:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const categories = [
     { id: 'all', name: 'All Rice', icon: '🌾' },
-    { id: 'jasmine', name: 'Jasmine', icon: '🌸' },
-    { id: 'brown', name: 'Brown Rice', icon: '🟤' },
-    { id: 'sinandomeng', name: 'Sinandomeng', icon: '🍚' },
-    { id: 'sticky', name: 'Sticky Rice', icon: '🍡' },
-    { id: 'specialty', name: 'Specialty', icon: '⭐' },
-    { id: 'white', name: 'White Rice', icon: '⚪' },
-    { id: 'dinorado', name: 'Dinorado', icon: '💎' }
+    { id: 'Rice', name: 'Rice', icon: '🍚' },
+    { id: 'Vegetables', name: 'Vegetables', icon: '🥬' },
+    { id: 'Fruits', name: 'Fruits', icon: '🍎' },
+    { id: 'Grains', name: 'Grains', icon: '🌾' },
   ];
 
   const filteredProducts = products
     .filter(product => {
       const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           product.farmer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           product.location.toLowerCase().includes(searchQuery.toLowerCase());
+                           (product.farmerName && product.farmerName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                           (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesCategory && matchesSearch;
     })
     .sort((a, b) => {
       if (sortBy === 'price-low') return a.price - b.price;
       if (sortBy === 'price-high') return b.price - a.price;
-      if (sortBy === 'rating') return b.rating - a.rating;
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
       return 0; // featured
     });
 
@@ -288,27 +138,28 @@ const PublicProducts = () => {
           </p>
         </div>
 
-        {filteredProducts.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading products...</p>
+            </div>
+          </div>
+        ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map(product => (
               <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
                 <div className="relative">
                   <img 
-                    src={product.image} 
+                    src={product.image || 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500'} 
                     alt={product.name}
                     className="w-full h-48 object-cover"
                   />
-                  {product.organic && (
-                    <span className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                      🌱 Organic
-                    </span>
-                  )}
-                  <span className={`absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full ${
-                    product.stock === 'In Stock' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-yellow-500 text-white'
-                  }`}>
-                    {product.stock}
+                  <span className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    {product.status || 'Available'}
+                  </span>
+                  <span className="absolute top-3 left-3 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
+                    {product.category}
                   </span>
                 </div>
                 <div className="p-5">
@@ -319,26 +170,27 @@ const PublicProducts = () => {
                     <svg className="w-4 h-4 mr-1 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    <span className="font-semibold">{product.farmer}</span>
+                    <span className="font-semibold">{product.farmerName || 'Local Farmer'}</span>
                   </div>
 
                   <div className="flex items-center text-sm text-gray-600 mb-3">
                     <svg className="w-4 h-4 mr-1 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
-                    <span>{product.location}</span>
+                    <span>Stock: {product.stock} kg</span>
                   </div>
 
-                  <div className="flex items-center mb-4">
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                      </svg>
-                      <span className="ml-1 font-semibold text-gray-800">{product.rating}</span>
+                  {product.rating && (
+                    <div className="flex items-center mb-4">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                          <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                        </svg>
+                        <span className="ml-1 font-semibold text-gray-800">{product.rating}</span>
+                      </div>
+                      <span className="text-sm text-gray-500 ml-2">({product.reviews || 0} reviews)</span>
                     </div>
-                    <span className="text-sm text-gray-500 ml-2">({product.reviews} reviews)</span>
-                  </div>
+                  )}
 
                   <div className="flex items-center justify-between mb-4">
                     <div>

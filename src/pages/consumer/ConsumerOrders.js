@@ -1,92 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
+import Toast from '../../components/Toast';
+import { getOrders, updateOrderStatus } from '../../services/orderService';
 
 const ConsumerOrders = () => {
   const [filter, setFilter] = useState('all');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  const orders = [
-    {
-      id: 'ORD-001',
-      date: '2024-11-01',
-      farmer: "Pedro's Farm",
-      items: [{ name: 'Jasmine Rice', quantity: 10, price: 45 }],
-      total: 500,
-      status: 'delivered',
-      rating: 5,
-      deliveryDate: '2024-11-03'
-    },
-    {
-      id: 'ORD-002',
-      date: '2024-11-02',
-      farmer: "Garcia Farm",
-      items: [{ name: 'Brown Rice', quantity: 5, price: 50 }],
-      total: 300,
-      status: 'in-transit',
-      estimatedDelivery: '2024-11-05'
-    },
-    {
-      id: 'ORD-003',
-      date: '2024-11-03',
-      farmer: "Santos Farm",
-      items: [{ name: 'Sinandomeng Rice', quantity: 20, price: 40 }],
-      total: 850,
-      status: 'processing',
-      estimatedDelivery: '2024-11-06'
-    },
-    {
-      id: 'ORD-004',
-      date: '2024-11-04',
-      farmer: "Reyes Farm",
-      items: [{ name: 'Black Rice', quantity: 8, price: 60 }],
-      total: 530,
-      status: 'pending',
-      estimatedDelivery: '2024-11-07'
-    },
-    {
-      id: 'ORD-005',
-      date: '2024-10-28',
-      farmer: "Cruz Farm",
-      items: [{ name: 'Sticky Rice', quantity: 12, price: 55 }],
-      total: 710,
-      status: 'delivered',
-      rating: 4,
-      deliveryDate: '2024-10-30'
-    },
-    {
-      id: 'ORD-006',
-      date: '2024-10-25',
-      farmer: "Lopez Farm",
-      items: [{ name: 'Dinorado Rice', quantity: 15, price: 48 }],
-      total: 770,
-      status: 'delivered',
-      rating: 5,
-      deliveryDate: '2024-10-27'
-    },
-    {
-      id: 'ORD-007',
-      date: '2024-11-05',
-      farmer: "Mendoza Farm",
-      items: [{ name: 'Red Rice', quantity: 7, price: 52 }],
-      total: 414,
-      status: 'processing',
-      estimatedDelivery: '2024-11-08'
-    },
-    {
-      id: 'ORD-008',
-      date: '2024-10-22',
-      farmer: "Fernandez Farm",
-      items: [{ name: 'Organic White Rice', quantity: 18, price: 47 }],
-      total: 896,
-      status: 'delivered',
-      rating: 5,
-      deliveryDate: '2024-10-24'
-    },
-  ];
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+  const loadOrders = async () => {
+    setLoading(true);
+    const result = await getOrders();
+    if (result.success) {
+      setOrders(result.orders || []);
+    } else {
+      setToast({ message: result.error || 'Failed to load orders', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const handleCancelOrder = async (orderId, orderNumber) => {
+    if (window.confirm(`Are you sure you want to cancel Order #${orderNumber}?`)) {
+      const result = await updateOrderStatus(orderId, 'cancelled');
+      if (result.success) {
+        setToast({ message: 'Order cancelled successfully', type: 'success' });
+        await loadOrders();
+      } else {
+        setToast({ message: result.error || 'Failed to cancel order', type: 'error' });
+      }
+    }
+  };
+
+  const handleViewDetails = (order) => {
+    setSelectedOrder(order);
+    setShowDetailsModal(true);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'delivered': return 'bg-green-100 text-green-800';
-      case 'in-transit': return 'bg-blue-100 text-blue-800';
+      case 'shipped': return 'bg-blue-100 text-blue-800';
       case 'processing': return 'bg-yellow-100 text-yellow-800';
       case 'pending': return 'bg-orange-100 text-orange-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
@@ -95,6 +55,20 @@ const ConsumerOrders = () => {
   };
 
   const filteredOrders = filter === 'all' ? orders : orders.filter(o => o.status === filter);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-100">
+        <Sidebar userType="consumer" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading orders...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -121,8 +95,8 @@ const ConsumerOrders = () => {
             <p className="text-2xl font-bold text-yellow-600">{orders.filter(o => o.status === 'processing').length}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-gray-500 text-sm">In Transit</p>
-            <p className="text-2xl font-bold text-blue-600">{orders.filter(o => o.status === 'in-transit').length}</p>
+            <p className="text-gray-500 text-sm">Shipped</p>
+            <p className="text-2xl font-bold text-blue-600">{orders.filter(o => o.status === 'shipped').length}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <p className="text-gray-500 text-sm">Delivered</p>
@@ -137,8 +111,9 @@ const ConsumerOrders = () => {
               { key: 'all', label: 'All Orders' },
               { key: 'pending', label: 'Pending' },
               { key: 'processing', label: 'Processing' },
-              { key: 'in-transit', label: 'In Transit' },
+              { key: 'shipped', label: 'Shipped' },
               { key: 'delivered', label: 'Delivered' },
+              { key: 'cancelled', label: 'Cancelled' },
             ].map(tab => (
               <button
                 key={tab.key}
@@ -164,30 +139,28 @@ const ConsumerOrders = () => {
                 <div className="flex flex-wrap justify-between items-start mb-4">
                   <div>
                     <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-xl font-bold">{order.id}</h3>
+                      <h3 className="text-xl font-bold">Order #{order.id}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(order.status)}`}>
-                        {order.status.replace('-', ' ').toUpperCase()}
+                        {order.status.toUpperCase()}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">Ordered on {order.date}</p>
-                    <p className="text-sm text-gray-600">From {order.farmer}</p>
+                    <p className="text-sm text-gray-600">Ordered on {new Date(order.createdAt).toLocaleDateString()}</p>
+                    {order.items[0] && (
+                      <p className="text-sm text-gray-600">From {order.items[0].farmerName}</p>
+                    )}
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">₱{order.total}</p>
-                    {order.status === 'delivered' && order.rating && (
-                      <div className="mt-2">
-                        <span className="text-yellow-500">{'⭐'.repeat(order.rating)}</span>
-                      </div>
-                    )}
+                    <p className="text-2xl font-bold text-primary">₱{order.totalAmount.toFixed(2)}</p>
+                    <p className="text-xs text-gray-500 mt-1">{order.paymentMethod}</p>
                   </div>
                 </div>
 
                 {/* Order Items */}
                 <div className="bg-gray-50 rounded p-4 mb-4">
-                  {order.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between">
-                      <span>{item.name} x {item.quantity}kg</span>
-                      <span className="font-semibold">₱{item.price * item.quantity}</span>
+                  {order.items.map((item) => (
+                    <div key={item.id} className="flex justify-between">
+                      <span>{item.productName} x {item.quantity}{item.unit}</span>
+                      <span className="font-semibold">₱{item.subtotal.toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -203,7 +176,8 @@ const ConsumerOrders = () => {
                         left: '2.5%',
                         width: order.status === 'pending' ? '0%' : 
                                order.status === 'processing' ? '32%' : 
-                               order.status === 'in-transit' ? '65%' : '95%'
+                               order.status === 'shipped' ? '65%' : 
+                               order.status === 'delivered' ? '95%' : '0%'
                       }}
                     />
                     
@@ -211,10 +185,10 @@ const ConsumerOrders = () => {
                     {[
                       { key: 'pending', label: 'Order Placed', icon: '📝' },
                       { key: 'processing', label: 'Processing', icon: '⚙️' },
-                      { key: 'in-transit', label: 'In Transit', icon: '🚚' },
+                      { key: 'shipped', label: 'Shipped', icon: '🚚' },
                       { key: 'delivered', label: 'Delivered', icon: '✅' }
-                    ].map((step, idx) => {
-                      const statuses = ['pending', 'processing', 'in-transit', 'delivered'];
+                    ].map((step) => {
+                      const statuses = ['pending', 'processing', 'shipped', 'delivered'];
                       const currentIndex = statuses.indexOf(order.status);
                       const stepIndex = statuses.indexOf(step.key);
                       const isCompleted = stepIndex <= currentIndex;
@@ -244,27 +218,30 @@ const ConsumerOrders = () => {
                 <div className="flex flex-wrap justify-between items-center">
                   <div>
                     {order.status === 'delivered' ? (
-                      <p className="text-sm text-green-600">✓ Delivered on {order.deliveryDate}</p>
+                      <p className="text-sm text-green-600">✓ Delivered on {new Date(order.updatedAt || order.createdAt).toLocaleDateString()}</p>
+                    ) : order.status === 'cancelled' ? (
+                      <p className="text-sm text-red-600">✗ Order cancelled</p>
                     ) : (
-                      <p className="text-sm text-gray-600">Estimated delivery: {order.estimatedDelivery}</p>
+                      <p className="text-sm text-gray-600">Order placed: {new Date(order.createdAt).toLocaleDateString()}</p>
                     )}
                   </div>
                   <div className="flex space-x-2 mt-2 sm:mt-0">
-                    <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded transition">
+                    <button 
+                      onClick={() => handleViewDetails(order)}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded transition"
+                    >
                       View Details
                     </button>
-                    {order.status === 'delivered' && !order.rating && (
-                      <button className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded transition">
-                        Rate Order
-                      </button>
-                    )}
                     {order.status === 'delivered' && (
                       <button className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded transition">
                         Buy Again
                       </button>
                     )}
                     {order.status === 'pending' && (
-                      <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition">
+                      <button 
+                        onClick={() => handleCancelOrder(order.id, order.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition"
+                      >
                         Cancel Order
                       </button>
                     )}
@@ -284,6 +261,106 @@ const ConsumerOrders = () => {
             <a href="/consumer/products" className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition inline-block">
               Start Shopping
             </a>
+          </div>
+        )}
+
+        {/* Toast Notification */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+
+        {/* Order Details Modal */}
+        {showDetailsModal && selectedOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800">Order Details</h2>
+                  <button 
+                    onClick={() => setShowDetailsModal(false)}
+                    className="text-gray-500 hover:text-gray-700 transition"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-gray-600">Order Number</p>
+                      <p className="text-lg font-bold">#{selectedOrder.id}</p>
+                    </div>
+                    <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(selectedOrder.status)}`}>
+                      {selectedOrder.status.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-600 mb-2">Order Date</p>
+                    <p className="font-semibold">{new Date(selectedOrder.createdAt).toLocaleString()}</p>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-600 mb-3">Items</p>
+                    <div className="space-y-2">
+                      {selectedOrder.items.map((item) => (
+                        <div key={item.id} className="flex justify-between items-center bg-gray-50 p-3 rounded">
+                          <div>
+                            <p className="font-semibold">{item.productName}</p>
+                            <p className="text-sm text-gray-600">
+                              {item.quantity} {item.unit} × ₱{(item.subtotal / item.quantity).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-gray-500">Farmer: {item.farmerName}</p>
+                          </div>
+                          <p className="font-bold text-primary">₱{item.subtotal.toFixed(2)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between mb-2">
+                      <p className="text-gray-600">Subtotal</p>
+                      <p className="font-semibold">₱{selectedOrder.totalAmount.toFixed(2)}</p>
+                    </div>
+                    <div className="flex justify-between mb-2">
+                      <p className="text-gray-600">Delivery Fee</p>
+                      <p className="font-semibold">₱0.00</p>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold border-t pt-2">
+                      <p>Total</p>
+                      <p className="text-primary">₱{selectedOrder.totalAmount.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-600 mb-2">Payment Method</p>
+                    <p className="font-semibold">{selectedOrder.paymentMethod}</p>
+                    <p className="text-sm text-gray-600 mt-1">Status: {selectedOrder.paymentStatus}</p>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-600 mb-2">Delivery Address</p>
+                    <p className="font-semibold">{selectedOrder.deliveryAddress}</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button 
+                    onClick={() => setShowDetailsModal(false)}
+                    className="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-lg transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

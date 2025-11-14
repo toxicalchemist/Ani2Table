@@ -1,155 +1,172 @@
-// Authentication Service using Local Storage
+// Authentication Service using API
 
-const AUTH_KEY = 'ani2table_users';
-const SESSION_KEY = 'ani2table_session';
+// API Configuration
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-// Initialize storage if it doesn't exist
-const initializeStorage = () => {
-  if (!localStorage.getItem(AUTH_KEY)) {
-    localStorage.setItem(AUTH_KEY, JSON.stringify([]));
+// Helper function to get auth token
+const getToken = () => localStorage.getItem('ani2table_token');
+
+// Helper function to save token
+const saveToken = (token) => localStorage.setItem('ani2table_token', token);
+
+// Helper function to remove token
+const removeToken = () => localStorage.removeItem('ani2table_token');
+
+// Helper function to get user from localStorage
+const getStoredUser = () => {
+  try {
+    const user = localStorage.getItem('ani2table_user');
+    if (!user) return null;
+    const parsed = JSON.parse(user);
+    return parsed;
+  } catch (error) {
+    console.error('Error parsing user from localStorage:', error);
+    // Clear corrupted data
+    localStorage.removeItem('ani2table_user');
+    return null;
   }
 };
 
-// Initialize with demo accounts for testing
-export const initializeDemoAccounts = () => {
-  const users = getUsers();
-  
-  // Check if demo accounts already exist
-  const demoExists = users.some(u => u.username === 'consumer' || u.username === 'farmer' || u.username === 'admin');
-  
-  if (!demoExists) {
-    const demoAccounts = [
-      {
-        id: 'demo-1',
-        username: 'consumer',
-        password: 'password',
-        email: 'consumer@ani2table.com',
-        firstName: 'Maria',
-        lastName: 'Santos',
-        middleName: 'Cruz',
-        birthday: '1995-05-15',
-        gender: 'female',
-        contactNumber: '09123456789',
-        userType: 'consumer',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'demo-2',
-        username: 'farmer',
-        password: 'password',
-        email: 'farmer@ani2table.com',
-        firstName: 'Pedro',
-        lastName: 'Garcia',
-        middleName: 'Reyes',
-        birthday: '1980-03-20',
-        gender: 'male',
-        contactNumber: '09187654321',
-        userType: 'farmer',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'demo-3',
-        username: 'admin',
-        password: 'password',
-        email: 'admin@ani2table.com',
-        firstName: 'Admin',
-        lastName: 'User',
-        middleName: '',
-        birthday: '1985-01-01',
-        gender: 'male',
-        contactNumber: '09111111111',
-        userType: 'admin',
-        createdAt: new Date().toISOString(),
-      },
-    ];
-    
-    saveUsers([...users, ...demoAccounts]);
-  }
-};
+// Helper function to save user to localStorage
+const saveUser = (user) => localStorage.setItem('ani2table_user', JSON.stringify(user));
 
-// Get all users
-const getUsers = () => {
-  initializeStorage();
-  const users = localStorage.getItem(AUTH_KEY);
-  return JSON.parse(users) || [];
-};
-
-// Save users
-const saveUsers = (users) => {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(users));
-};
+// Helper function to remove user from localStorage
+const removeUser = () => localStorage.removeItem('ani2table_user');
 
 // Register new user
-export const register = (userData) => {
-  const users = getUsers();
-  
-  // Check if username already exists
-  const existingUser = users.find(user => user.username === userData.username);
-  if (existingUser) {
-    return { success: false, error: 'Username already exists' };
+export const register = async (userData) => {
+  try {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      saveToken(data.token);
+      saveUser(data.user);
+      return { success: true, user: data.user };
+    } else {
+      return { success: false, error: data.error };
+    }
+  } catch (error) {
+    console.error('Register error:', error);
+    return { success: false, error: 'Network error. Please try again.' };
   }
-  
-  // Check if email already exists
-  const existingEmail = users.find(user => user.email === userData.email);
-  if (existingEmail) {
-    return { success: false, error: 'Email already registered' };
-  }
-  
-  // Create new user
-  const newUser = {
-    id: Date.now().toString(),
-    ...userData,
-    createdAt: new Date().toISOString(),
-  };
-  
-  users.push(newUser);
-  saveUsers(users);
-  
-  return { success: true, user: newUser };
 };
 
 // Login user
-export const login = (username, password) => {
-  const users = getUsers();
-  
-  const user = users.find(
-    u => u.username === username && u.password === password
-  );
-  
-  if (!user) {
-    return { success: false, error: 'Invalid username or password' };
+export const login = async (username, password) => {
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      saveToken(data.token);
+      saveUser(data.user);
+      return { success: true, user: data.user };
+    } else {
+      return { success: false, error: data.error };
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    return { success: false, error: 'Network error. Please try again.' };
   }
-  
-  // Create session (don't store password in session)
-  const session = {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    userType: user.userType,
-    loginTime: new Date().toISOString(),
-  };
-  
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  
-  return { success: true, user: session };
 };
 
 // Logout user
 export const logout = () => {
-  localStorage.removeItem(SESSION_KEY);
+  removeToken();
+  removeUser();
+  return { success: true };
 };
 
-// Get current session
+// Get current user
 export const getCurrentUser = () => {
-  const session = localStorage.getItem(SESSION_KEY);
-  return session ? JSON.parse(session) : null;
+  return getStoredUser();
 };
 
 // Check if user is authenticated
 export const isAuthenticated = () => {
-  return getCurrentUser() !== null;
+  return !!getToken();
+};
+
+// Get user profile from API
+export const getProfile = async () => {
+  try {
+    const token = getToken();
+    if (!token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      saveUser(data.user);
+      return { success: true, user: data.user };
+    } else {
+      return { success: false, error: data.error };
+    }
+  } catch (error) {
+    console.error('Get profile error:', error);
+    return { success: false, error: 'Network error. Please try again.' };
+  }
+};
+
+// Update user profile
+export const updateProfile = async (profileData) => {
+  try {
+    const token = getToken();
+    if (!token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Refresh user data
+      await getProfile();
+      return { success: true, message: data.message };
+    } else {
+      return { success: false, error: data.error };
+    }
+  } catch (error) {
+    console.error('Update profile error:', error);
+    return { success: false, error: 'Network error. Please try again.' };
+  }
+};
+
+// Initialize demo accounts (for backward compatibility - not needed with database)
+export const initializeDemoAccounts = () => {
+  console.log('Demo accounts are now in the database');
 };
 
 // Get dashboard route based on user type

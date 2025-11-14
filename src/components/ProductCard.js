@@ -1,11 +1,15 @@
 import React from 'react';
 
 const ProductCard = ({ product, onClick }) => {
+  const imageUrl = product.imageUrl 
+    ? `http://localhost:5000${product.imageUrl}` 
+    : product.image || '/placeholder-rice.jpg';
+
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition cursor-pointer" onClick={onClick}>
       <div className="relative">
         <img 
-          src={product.image || '/placeholder-rice.jpg'} 
+          src={imageUrl} 
           alt={product.name} 
           className="w-full h-48 object-cover"
         />

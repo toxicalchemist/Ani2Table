@@ -1,25 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { getAnalytics } from '../../services/adminService';
 
 const AdminDashboard = () => {
-  const salesData = [
-    { name: 'Jasmine', value: 400 },
-    { name: 'Brown', value: 300 },
-    { name: 'Sinandomeng', value: 300 },
-    { name: 'Others', value: 200 },
-  ];
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const monthlyData = [
-    { month: 'Jan', sales: 4000 },
-    { month: 'Feb', sales: 3000 },
-    { month: 'Mar', sales: 5000 },
-    { month: 'Apr', sales: 4500 },
-    { month: 'May', sales: 6000 },
-    { month: 'Jun', sales: 5500 },
-  ];
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const loadAnalytics = async () => {
+    const result = await getAnalytics();
+    if (result.success) {
+      setAnalytics(result.analytics);
+    }
+    setLoading(false);
+  };
 
   const COLORS = ['#8B1A1A', '#D4AF37', '#4CAF50', '#2196F3'];
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-100">
+        <Sidebar userType="admin" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const stats = {
+    totalSales: analytics?.orders?.total_revenue || 0,
+    totalOrders: analytics?.orders?.total_orders || 0,
+    activeFarmers: analytics?.users?.farmer || 0,
+    totalConsumers: analytics?.users?.consumer || 0
+  };
+
+  const topProducts = analytics?.topProducts || [];
+  const monthlyRevenue = analytics?.monthlyRevenue || [];
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -37,8 +61,8 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Total Sales</p>
-                <p className="text-3xl font-bold text-gray-800">₱125,340</p>
-                <p className="text-green-500 text-sm mt-1">+12% from last month</p>
+                <p className="text-3xl font-bold text-gray-800">₱{stats.totalSales.toLocaleString()}</p>
+                <p className="text-gray-400 text-sm mt-1">All time revenue</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,8 +76,8 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Total Orders</p>
-                <p className="text-3xl font-bold text-gray-800">1,234</p>
-                <p className="text-green-500 text-sm mt-1">+8% from last month</p>
+                <p className="text-3xl font-bold text-gray-800">{stats.totalOrders}</p>
+                <p className="text-gray-400 text-sm mt-1">Delivered: {analytics?.orders?.delivered_orders || 0}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,8 +91,8 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Active Farmers</p>
-                <p className="text-3xl font-bold text-gray-800">145</p>
-                <p className="text-green-500 text-sm mt-1">+5 new this month</p>
+                <p className="text-3xl font-bold text-gray-800">{stats.activeFarmers}</p>
+                <p className="text-gray-400 text-sm mt-1">Registered farmers</p>
               </div>
               <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,8 +106,8 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Total Consumers</p>
-                <p className="text-3xl font-bold text-gray-800">2,456</p>
-                <p className="text-green-500 text-sm mt-1">+18% from last month</p>
+                <p className="text-3xl font-bold text-gray-800">{stats.totalConsumers}</p>
+                <p className="text-gray-400 text-sm mt-1">Active users</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,90 +121,96 @@ const AdminDashboard = () => {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
-            <h3 className="text-2xl font-bold mb-6 text-gray-800">Sales by Product Type</h3>
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={salesData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={140}
-                  fill="#8884d8"
-                  dataKey="value"
-                  stroke="#fff"
-                  strokeWidth={3}
-                >
-                  {salesData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <h3 className="text-2xl font-bold mb-6 text-gray-800">Top Products</h3>
+            {topProducts.length === 0 ? (
+              <div className="text-center text-gray-500 py-20">No product data available</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={400}>
+                <PieChart>
+                  <Pie
+                    data={topProducts.map(p => ({ name: p.name, value: p.totalSold }))}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={true}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={140}
+                    fill="#8884d8"
+                    dataKey="value"
+                    stroke="#fff"
+                    strokeWidth={3}
+                  >
+                    {topProducts.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
-            <h3 className="text-2xl font-bold mb-6 text-gray-800">Monthly Sales Trend</h3>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="sales" fill="#8B1A1A" />
-              </BarChart>
-            </ResponsiveContainer>
+            <h3 className="text-2xl font-bold mb-6 text-gray-800">Monthly Revenue Trend</h3>
+            {monthlyRevenue.length === 0 ? (
+              <div className="text-center text-gray-500 py-20">No revenue data available</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={monthlyRevenue}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="revenue" fill="#8B1A1A" name="Revenue (₱)" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
         {/* Recent Orders */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-xl font-bold mb-4">Recent Orders</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4">Order ID</th>
-                  <th className="text-left py-3 px-4">Customer</th>
-                  <th className="text-left py-3 px-4">Product</th>
-                  <th className="text-left py-3 px-4">Amount</th>
-                  <th className="text-left py-3 px-4">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { id: '#ORD-001', customer: 'Juan Dela Cruz', product: 'Jasmine Rice 10kg', amount: '₱450', status: 'Delivered' },
-                  { id: '#ORD-002', customer: 'Maria Santos', product: 'Brown Rice 5kg', amount: '₱250', status: 'In Transit' },
-                  { id: '#ORD-003', customer: 'Pedro Garcia', product: 'Sinandomeng 20kg', amount: '₱800', status: 'Processing' },
-                  { id: '#ORD-004', customer: 'Ana Lopez', product: 'Jasmine Rice 15kg', amount: '₱675', status: 'Delivered' },
-                  { id: '#ORD-005', customer: 'Carlos Reyes', product: 'Dinorado Rice 12kg', amount: '₱660', status: 'Delivered' },
-                  { id: '#ORD-006', customer: 'Elena Cruz', product: 'Black Rice 8kg', amount: '₱520', status: 'In Transit' },
-                  { id: '#ORD-007', customer: 'Roberto Diaz', product: 'Sticky Rice 6kg', amount: '₱288', status: 'Processing' },
-                  { id: '#ORD-008', customer: 'Sofia Mendez', product: 'Organic White 25kg', amount: '₱1,175', status: 'Pending' },
-                ].map((order, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium">{order.id}</td>
-                    <td className="py-3 px-4">{order.customer}</td>
-                    <td className="py-3 px-4">{order.product}</td>
-                    <td className="py-3 px-4 font-bold">{order.amount}</td>
-                    <td className="py-3 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                        order.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
-                        order.status === 'Processing' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {order.status}
-                      </span>
-                    </td>
+          {!analytics?.recentOrders || analytics.recentOrders.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">No recent orders</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4">Order ID</th>
+                    <th className="text-left py-3 px-4">Customer</th>
+                    <th className="text-left py-3 px-4">Amount</th>
+                    <th className="text-left py-3 px-4">Date</th>
+                    <th className="text-left py-3 px-4">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {analytics.recentOrders.map((order) => (
+                    <tr key={order.id} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-4 font-medium">#{order.id}</td>
+                      <td className="py-3 px-4">{order.customerName}</td>
+                      <td className="py-3 px-4 font-bold">₱{order.amount.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600">
+                        {new Date(order.date).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                          order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                          order.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                          order.status === 'pending' ? 'bg-orange-100 text-orange-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

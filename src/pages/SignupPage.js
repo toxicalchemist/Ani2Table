@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { register, isAuthenticated, getDashboardRoute } from '../services/authService';
+import { register, isAuthenticated, getDashboardRoute, getCurrentUser } from '../services/authService';
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -25,8 +25,10 @@ const SignupPage = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated()) {
-      const user = JSON.parse(localStorage.getItem('ani2table_session'));
-      navigate(getDashboardRoute(user.userType));
+      const user = getCurrentUser();
+      if (user && user.userType) {
+        navigate(getDashboardRoute(user.userType));
+      }
     }
   }, [navigate]);
 
@@ -71,7 +73,7 @@ const SignupPage = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -81,10 +83,9 @@ const SignupPage = () => {
     setLoading(true);
     setError('');
 
-    // Simulate a brief loading state for better UX
-    setTimeout(() => {
+    try {
       const { confirmPassword, ...dataToSubmit } = formData;
-      const result = register(dataToSubmit);
+      const result = await register(dataToSubmit);
       
       if (result.success) {
         // Show success and redirect to login
@@ -95,7 +96,10 @@ const SignupPage = () => {
         setError(result.error);
         setLoading(false);
       }
-    }, 500);
+    } catch (error) {
+      setError('An error occurred. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (

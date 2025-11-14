@@ -9,6 +9,12 @@ const ProtectedRoute = ({ children, allowedTypes }) => {
     return <Navigate to="/login" replace />;
   }
   
+  // Additional safety check for userType
+  if (!currentUser.userType) {
+    console.error('User object missing userType:', currentUser);
+    return <Navigate to="/login" replace />;
+  }
+  
   if (allowedTypes && !allowedTypes.includes(currentUser.userType)) {
     return <Navigate to="/" replace />;
   }

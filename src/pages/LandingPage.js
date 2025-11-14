@@ -1,15 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { Link } from 'react-router-dom';
+import { getAllProducts } from '../services/productService';
+import { getAnalytics } from '../services/adminService';
 
 const LandingPage = () => {
   const [scrollY, setScrollY] = useState(0);
+  const [stats, setStats] = useState({
+    farmers: 0,
+    customers: 0,
+    products: 0
+  });
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    loadLandingData();
+  }, []);
+
+  const loadLandingData = async () => {
+    try {
+      // Load analytics for stats
+      const analyticsResult = await getAnalytics();
+      if (analyticsResult.success) {
+        setStats({
+          farmers: analyticsResult.analytics?.users?.farmers || 0,
+          customers: analyticsResult.analytics?.users?.consumers || 0,
+          products: analyticsResult.analytics?.products?.total || 0
+        });
+      }
+
+      // Load featured products (first 3 available products)
+      const productsResult = await getAllProducts({ status: 'available' });
+      if (productsResult.success) {
+        setFeaturedProducts((productsResult.products || []).slice(0, 3));
+      }
+    } catch (error) {
+      console.error('Error loading landing data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -75,23 +112,29 @@ const LandingPage = () => {
       {/* Stats Section */}
       <section className="py-20 bg-gradient-to-r from-primary via-primary-dark to-primary text-white">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-12 text-center">
-            <div className="transform hover:scale-110 transition-all duration-300">
-              <div className="text-7xl font-extrabold mb-4 text-secondary">500+</div>
-              <div className="text-2xl font-semibold">Local Farmers</div>
-              <p className="text-gray-200 mt-2">Trusted partners</p>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-secondary"></div>
             </div>
-            <div className="transform hover:scale-110 transition-all duration-300">
-              <div className="text-7xl font-extrabold mb-4 text-secondary">10k+</div>
-              <div className="text-2xl font-semibold">Happy Customers</div>
-              <p className="text-gray-200 mt-2">Satisfied buyers</p>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-12 text-center">
+              <div className="transform hover:scale-110 transition-all duration-300">
+                <div className="text-7xl font-extrabold mb-4 text-secondary">{stats.farmers}+</div>
+                <div className="text-2xl font-semibold">Local Farmers</div>
+                <p className="text-gray-200 mt-2">Trusted partners</p>
+              </div>
+              <div className="transform hover:scale-110 transition-all duration-300">
+                <div className="text-7xl font-extrabold mb-4 text-secondary">{stats.customers}+</div>
+                <div className="text-2xl font-semibold">Happy Customers</div>
+                <p className="text-gray-200 mt-2">Satisfied buyers</p>
+              </div>
+              <div className="transform hover:scale-110 transition-all duration-300">
+                <div className="text-7xl font-extrabold mb-4 text-secondary">{stats.products}+</div>
+                <div className="text-2xl font-semibold">Rice Varieties</div>
+                <p className="text-gray-200 mt-2">Philippine rice varieties</p>
+              </div>
             </div>
-            <div className="transform hover:scale-110 transition-all duration-300">
-              <div className="text-7xl font-extrabold mb-4 text-secondary">50+</div>
-              <div className="text-2xl font-semibold">Rice Varieties</div>
-              <p className="text-gray-200 mt-2">Premium quality</p>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -112,15 +155,15 @@ const LandingPage = () => {
                 icon: (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 ),
-                title: 'Browse Products',
-                description: 'Explore a wide variety of locally grown rice from verified farmers in your area'
+                title: 'Browse Rice Varieties',
+                description: 'Explore premium Philippine rice varieties like Sinandomeng, Jasmine, and Dinorado from verified farmers'
               },
               {
                 icon: (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 ),
-                title: 'Place Order',
-                description: 'Add your favorite rice varieties to cart and complete your purchase securely'
+                title: 'Place Your Order',
+                description: 'Choose your preferred Philippine rice variety and complete your purchase securely'
               },
               {
                 icon: (
@@ -162,10 +205,10 @@ const LandingPage = () => {
             <h2 className="text-5xl font-bold text-center mb-12">About Us</h2>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-10 shadow-2xl">
               <p className="text-lg leading-relaxed mb-6">
-                <span className="font-bold text-secondary">Ani2Table</span> is a digital platform that aims to help local farmers, with consumers 
-                who are in need of an accessible way of purchasing rice, directly linking 
-                farmers with consumers through e-commerce. We believe in supporting local 
-                agriculture and providing fresh, quality rice to every household.
+                <span className="font-bold text-secondary">Ani2Table</span> is a digital platform connecting Filipino rice farmers 
+                directly with consumers who want authentic Philippine rice varieties. We specialize in premium 
+                local rice like Sinandomeng, Jasmine, Dinorado, and other regional varieties. We believe in supporting 
+                local agriculture and providing fresh, quality Philippine rice to every household.
               </p>
               <p className="text-lg leading-relaxed mb-6">
                 Our platform empowers rice farmers by giving them direct access to consumers, 
@@ -196,39 +239,45 @@ const LandingPage = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-5xl font-bold text-primary mb-4">
-              Featured Rice Varieties
+              Featured Philippine Rice Varieties
             </h2>
             <p className="text-xl text-gray-600">
-              Premium quality rice from trusted local farmers
+              Authentic Philippine rice from trusted local farmers
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {[
-              { name: 'Jasmine Rice', price: '45', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', desc: 'Aromatic and fluffy' },
-              { name: 'Sinandomeng Rice', price: '40', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', desc: 'Local favorite variety' },
-              { name: 'Brown Rice', price: '50', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', desc: 'Healthy and nutritious' },
-            ].map((product, index) => (
-              <div key={index} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group">
-                <div className="relative overflow-hidden">
-                  <img 
-                    src={product.image} 
-                    alt={product.name} 
-                    className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-300" 
-                  />
-                  <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">
-                    Fresh
-                  </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold mb-2 text-gray-800">{product.name}</h3>
-                  <p className="text-gray-600 mb-4">{product.desc}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-3xl font-bold text-primary">₱{product.price}</span>
-                    <span className="text-gray-500">/kg</span>
-                  </div>
-                </div>
+            {loading ? (
+              <div className="col-span-3 flex justify-center py-12">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
               </div>
-            ))}
+            ) : featuredProducts.length > 0 ? (
+              featuredProducts.map((product) => (
+                <div key={product.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group">
+                  <div className="relative overflow-hidden">
+                    <img 
+                      src={product.imageUrl ? `http://localhost:5000${product.imageUrl}` : 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400'} 
+                      alt={product.name} 
+                      className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-300" 
+                    />
+                    <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">
+                      {product.status || 'Available'}
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-2xl font-bold mb-2 text-gray-800">{product.name}</h3>
+                    <p className="text-gray-600 mb-4">{product.description || product.category}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-3xl font-bold text-primary">₱{product.price}</span>
+                      <span className="text-gray-500">/kg</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12 text-gray-500">
+                <p className="text-xl">No products available at the moment</p>
+              </div>
+            )}
           </div>
           <div className="text-center mt-12">
             <Link 

@@ -1,50 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import ProductCard from '../../components/ProductCard';
 import Toast from '../../components/Toast';
+import { getAllProducts } from '../../services/productService';
+import { addToCart } from '../../services/cartService';
 
 const ConsumerProducts = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const products = [
-    { id: 1, name: 'Jasmine Rice', type: 'Premium', price: 45, stock: 500, status: 'In Stock', farmer: "Pedro's Farm", rating: 4.8, reviews: 245, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Premium quality jasmine rice with aromatic fragrance. Perfect for special occasions and everyday meals. Grown with care by local farmers.' },
-    { id: 2, name: 'Sinandomeng Rice', type: 'Regular', price: 40, stock: 750, status: 'In Stock', farmer: "Santos Farm", rating: 4.6, reviews: 189, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Classic Filipino rice variety. Great taste and texture for daily consumption. Affordable and reliable quality.' },
-    { id: 3, name: 'Brown Rice', type: 'Organic', price: 50, stock: 300, status: 'In Stock', farmer: "Garcia Farm", rating: 4.9, reviews: 312, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Organic brown rice rich in fiber and nutrients. Healthy choice for wellness-focused consumers. Certified organic.' },
-    { id: 4, name: 'Black Rice', type: 'Premium', price: 60, stock: 200, status: 'In Stock', farmer: "Reyes Farm", rating: 4.7, reviews: 156, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Rare black rice variety with high antioxidants. Distinctive color and nutty flavor. Premium quality.' },
-    { id: 5, name: 'Sticky Rice', type: 'Specialty', price: 55, stock: 150, status: 'In Stock', farmer: "Cruz Farm", rating: 4.5, reviews: 98, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Traditional sticky rice perfect for desserts and special dishes. Authentic Filipino taste.' },
-    { id: 6, name: 'Dinorado Rice', type: 'Premium', price: 48, stock: 400, status: 'In Stock', farmer: "Lopez Farm", rating: 4.6, reviews: 201, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Premium Dinorado variety known for its fragrance and taste. Popular choice for special occasions.' },
-    { id: 7, name: 'Red Rice', type: 'Organic', price: 52, stock: 280, status: 'In Stock', farmer: "Mendoza Farm", rating: 4.8, reviews: 134, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Nutrient-dense red rice with natural antioxidants. Earthy flavor and healthy benefits. Organic certified.' },
-    { id: 8, name: 'Organic White Rice', type: 'Organic', price: 47, stock: 520, status: 'In Stock', farmer: "Fernandez Farm", rating: 4.7, reviews: 198, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Certified organic white rice grown without chemicals. Pure and healthy choice for your family.' },
-    { id: 9, name: 'Premium Malagkit', type: 'Specialty', price: 52, stock: 175, status: 'In Stock', farmer: "Villanueva Farm", rating: 4.6, reviews: 112, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'High-quality glutinous rice for traditional Filipino recipes. Perfect for kakanin and desserts.' },
-    { id: 10, name: 'Mixed Grain Rice', type: 'Specialty', price: 58, stock: 340, status: 'In Stock', farmer: "Aquino Farm", rating: 4.8, reviews: 165, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Healthy blend of different rice varieties and whole grains. Packed with nutrition and fiber.' },
-    { id: 11, name: 'Basmati Rice', type: 'Premium', price: 65, stock: 225, status: 'In Stock', farmer: "Torres Farm", rating: 4.9, reviews: 187, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Long-grain aromatic basmati rice. Fluffy texture and distinctive aroma for special dishes.' },
-    { id: 12, name: 'Sushi Rice', type: 'Specialty', price: 62, stock: 195, status: 'In Stock', farmer: "Diaz Farm", rating: 4.7, reviews: 143, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400', description: 'Premium short-grain Japanese-style rice. Perfect for sushi and other Japanese cuisine.' },
-  ];
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    setLoading(true);
+    const result = await getAllProducts({ status: 'available' });
+    if (result.success) {
+      setProducts(result.products);
+    } else {
+      setToast({ message: result.error || 'Failed to load products', type: 'error' });
+    }
+    setLoading(false);
+  };
+
+  const [quantity, setQuantity] = useState(1);
 
   const handleProductClick = (product) => {
     setSelectedProduct(product);
+    setQuantity(1); // Reset quantity when opening modal
     setShowDetailModal(true);
   };
 
-  const handleAddToCart = (productName) => {
-    setShowDetailModal(false);
-    setToast({ message: `${productName} added to cart!`, type: 'success' });
+  const handleAddToCart = async (productId, productName) => {
+    const result = await addToCart(productId, quantity);
+    if (result.success) {
+      setShowDetailModal(false);
+      setToast({ message: `${productName} added to cart!`, type: 'success' });
+    } else {
+      setToast({ message: result.error || 'Failed to add to cart', type: 'error' });
+    }
   };
 
   const categories = [
     { key: 'all', label: 'All' },
-    { key: 'Premium', label: 'Premium' },
-    { key: 'Regular', label: 'Regular' },
-    { key: 'Organic', label: 'Organic' },
-    { key: 'Specialty', label: 'Specialty' },
+    { key: 'Rice', label: 'Rice' },
+    { key: 'Vegetables', label: 'Vegetables' },
+    { key: 'Fruits', label: 'Fruits' },
+    { key: 'Grains', label: 'Grains' },
   ];
 
   const filteredProducts = products.filter(product => {
-    const matchesCategory = selectedCategory === 'all' || product.type === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
@@ -222,12 +234,13 @@ const ConsumerProducts = () => {
                       <input 
                         type="number" 
                         min="1" 
-                        defaultValue="1"
+                        value={quantity}
+                        onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary text-lg font-bold"
                       />
                     </div>
                     <button 
-                      onClick={() => handleAddToCart(selectedProduct.name)}
+                      onClick={() => handleAddToCart(selectedProduct.id, selectedProduct.name)}
                       className="flex-[2] bg-primary hover:bg-primary-dark text-white py-4 px-8 rounded-lg font-bold text-lg transition shadow-lg flex items-center justify-center space-x-2"
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

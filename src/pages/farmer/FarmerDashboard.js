@@ -1,25 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { getOrders } from '../../services/orderService';
+import { getAllProducts } from '../../services/productService';
+import { getCurrentUser } from '../../services/authService';
 
 const FarmerDashboard = () => {
   const [timeframe, setTimeframe] = useState('weekly');
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    pendingOrders: 0,
+    activeProducts: 0,
+    completedOrders: 0
+  });
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [salesData, setSalesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const currentUser = getCurrentUser();
 
-  const salesData = [
-    { day: 'Mon', sales: 1200 },
-    { day: 'Tue', sales: 1900 },
-    { day: 'Wed', sales: 1500 },
-    { day: 'Thu', sales: 2100 },
-    { day: 'Fri', sales: 1800 },
-    { day: 'Sat', sales: 2400 },
-    { day: 'Sun', sales: 2000 },
-  ];
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
-  const recentOrders = [
-    { id: '#ORD-045', customer: 'Juan Dela Cruz', product: 'Jasmine Rice 10kg', amount: 450, status: 'Delivered' },
-    { id: '#ORD-046', customer: 'Maria Santos', product: 'Brown Rice 5kg', amount: 250, status: 'In Transit' },
-    { id: '#ORD-047', customer: 'Penduco Garcia', product: 'Sinandomeng 15kg', amount: 600, status: 'Processing' },
-  ];
+  const loadDashboardData = async () => {
+    try {
+      // Load orders
+      const ordersResult = await getOrders();
+      if (ordersResult.success) {
+        const orders = ordersResult.orders || [];
+        const delivered = orders.filter(o => o.status === 'delivered');
+        const revenue = delivered.reduce((sum, order) => sum + order.totalAmount, 0);
+        
+        setStats({
+          totalRevenue: revenue,
+          pendingOrders: orders.filter(o => o.status === 'pending').length,
+          activeProducts: 0, // Will be updated from products
+          completedOrders: delivered.length
+        });
+
+        setRecentOrders(orders.slice(0, 5));
+        
+        // Generate weekly sales data (last 7 days)
+        const last7Days = Array.from({length: 7}, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (6 - i));
+          return date.toISOString().split('T')[0];
+        });
+        
+        const weekData = last7Days.map((date, index) => {
+          const dayOrders = delivered.filter(o => 
+            o.createdAt && o.createdAt.split('T')[0] === date
+          );
+          const daySales = dayOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+          return {
+            day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index % 7],
+            sales: daySales
+          };
+        });
+        setSalesData(weekData);
+      }
+
+      // Load products
+      const productsResult = await getAllProducts();
+      if (productsResult.success) {
+        const activeCount = (productsResult.products || []).filter(p => p.status === 'available').length;
+        setStats(prev => ({ ...prev, activeProducts: activeCount }));
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -32,33 +84,42 @@ const FarmerDashboard = () => {
           <p className="text-gray-600">Welcome back! Here's your farm overview</p>
         </div>
 
-        {/* Profile Card */}
-        <div className="bg-gradient-to-r from-primary to-primary-dark text-white rounded-lg shadow-lg p-6 mb-8">
-          <div className="flex items-center space-x-6">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center">
-              <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading dashboard...</p>
             </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold mb-1">Pedro's Rice Farm</h2>
-              <p className="text-gray-200 mb-2">Member since January 2024</p>
-              <div className="flex items-center space-x-4">
-                <div>
-                  <span className="text-sm">Rating:</span>
-                  <span className="ml-2 font-bold">⭐ 4.8</span>
+          </div>
+        ) : (
+          <>
+            {/* Profile Card */}
+            <div className="bg-gradient-to-r from-primary to-primary-dark text-white rounded-lg shadow-lg p-6 mb-8">
+              <div className="flex items-center space-x-6">
+                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center">
+                  <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
                 </div>
-                <div>
-                  <span className="text-sm">Total Products:</span>
-                  <span className="ml-2 font-bold">8</span>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold mb-1">
+                    {currentUser?.firstName} {currentUser?.lastName}'s Farm
+                  </h2>
+                  <p className="text-gray-200 mb-2">
+                    Member since {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
+                  </p>
+                  <div className="flex items-center space-x-4">
+                    <div>
+                      <span className="text-sm">Total Products:</span>
+                      <span className="ml-2 font-bold">{stats.activeProducts}</span>
+                    </div>
+                  </div>
                 </div>
+                <a href="/farmer/profile" className="bg-white text-primary px-6 py-2 rounded-lg font-bold hover:bg-gray-100 transition">
+                  Edit Profile
+                </a>
               </div>
             </div>
-            <button className="bg-white text-primary px-6 py-2 rounded-lg font-bold hover:bg-gray-100 transition">
-              Edit Profile
-            </button>
-          </div>
-        </div>
 
         {/* Stats Cards */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -82,8 +143,8 @@ const FarmerDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Total Revenue</p>
-                <p className="text-3xl font-bold text-gray-800">₱12,340</p>
-                <p className="text-green-500 text-sm mt-1">+15% this week</p>
+                <p className="text-3xl font-bold text-gray-800">₱{stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-gray-400 text-sm mt-1">Delivered orders</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,8 +158,8 @@ const FarmerDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Pending Orders</p>
-                <p className="text-3xl font-bold text-gray-800">24</p>
-                <p className="text-blue-500 text-sm mt-1">3 new today</p>
+                <p className="text-3xl font-bold text-gray-800">{stats.pendingOrders}</p>
+                <p className="text-gray-400 text-sm mt-1">Awaiting action</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,8 +173,8 @@ const FarmerDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Products Listed</p>
-                <p className="text-3xl font-bold text-gray-800">8</p>
-                <p className="text-gray-500 text-sm mt-1">5 in stock</p>
+                <p className="text-3xl font-bold text-gray-800">{stats.activeProducts}</p>
+                <p className="text-gray-400 text-sm mt-1">Available products</p>
               </div>
               <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,9 +187,9 @@ const FarmerDashboard = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm">Reviews</p>
-                <p className="text-3xl font-bold text-gray-800">4.8</p>
-                <p className="text-green-500 text-sm mt-1">156 reviews</p>
+                <p className="text-gray-500 text-sm">Completed Orders</p>
+                <p className="text-3xl font-bold text-gray-800">{stats.completedOrders}</p>
+                <p className="text-gray-400 text-sm mt-1">Successfully delivered</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,6 +246,8 @@ const FarmerDashboard = () => {
             </button>
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );
