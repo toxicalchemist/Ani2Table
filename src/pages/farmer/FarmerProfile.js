@@ -53,8 +53,12 @@ const FarmerProfile = () => {
 
   const handleSave = async () => {
     const result = await updateProfile({
+      farmName: profileData.farmName,
       contactNumber: profileData.phone,
-      address: profileData.location
+      address: profileData.location,
+      farmSize: profileData.farmSize,
+      bio: profileData.bio,
+      established: profileData.established
     });
     
     if (result.success) {

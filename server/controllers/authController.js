@@ -227,6 +227,10 @@ export const getProfile = async (req, res) => {
         userType: user.user_type,
         address: user.address,
         profileImage: user.profile_image,
+        farmName: user.farm_name,
+        farmSize: user.farm_size,
+        bio: user.bio,
+        established: user.established,
         createdAt: user.created_at
       }
     });
@@ -250,16 +254,21 @@ export const updateProfile = async (req, res) => {
       gender,
       contactNumber,
       address,
-      profileImage
+      profileImage,
+      farmName,
+      farmSize,
+      bio,
+      established
     } = req.body;
 
     await pool.query(
       `UPDATE users 
        SET first_name = ?, last_name = ?, middle_name = ?, birthday = ?, 
-           gender = ?, contact_number = ?, address = ?, profile_image = ?
+           gender = ?, contact_number = ?, address = ?, profile_image = ?,
+           farm_name = ?, farm_size = ?, bio = ?, established = ?
        WHERE id = ?`,
       [firstName, lastName, middleName, birthday, gender, contactNumber, 
-       address, profileImage, req.user.id]
+       address, profileImage, farmName, farmSize, bio, established, req.user.id]
     );
 
     res.json({
