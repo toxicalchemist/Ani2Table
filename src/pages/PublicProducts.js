@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { Link } from 'react-router-dom';
 import { getAllProducts } from '../services/productService';
+import { getMediaUrl } from '../utils/media';
 
 const PublicProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -151,9 +152,10 @@ const PublicProducts = () => {
               <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
                 <div className="relative">
                   <img 
-                    src={product.image || 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500'} 
+                    src={getMediaUrl(product.imageUrl || product.image)} 
                     alt={product.name}
                     className="w-full h-48 object-cover"
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500'; }}
                   />
                   <span className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                     {product.status || 'Available'}

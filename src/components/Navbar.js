@@ -40,7 +40,7 @@ const Navbar = ({ isLanding = false, userType = null }) => {
               <>
                 <Link to="/" className="hover:text-secondary transition font-bold text-lg">HOME</Link>
                 <Link to="/products" className="hover:text-secondary transition font-bold text-lg">PRODUCTS</Link>
-                <a href="#about" className="hover:text-secondary transition font-bold text-lg">ABOUT</a>
+                <a href="/#about" className="hover:text-secondary transition font-bold text-lg">ABOUT</a>
                 <div className="flex space-x-4 ml-6">
                   <Link 
                     to="/login" 
@@ -99,7 +99,7 @@ const Navbar = ({ isLanding = false, userType = null }) => {
               <>
                 <Link to="/" className="block py-3 hover:text-secondary transition font-bold text-lg">HOME</Link>
                 <Link to="/products" className="block py-3 hover:text-secondary transition font-bold text-lg">PRODUCTS</Link>
-                <a href="#about" className="block py-3 hover:text-secondary transition font-bold text-lg">ABOUT</a>
+                <a href="/#about" className="block py-3 hover:text-secondary transition font-bold text-lg">ABOUT</a>
                 <Link to="/login" className="block py-3 mt-3 bg-secondary hover:bg-secondary-dark px-5 rounded-lg transition font-bold text-center">
                   Login
                 </Link>

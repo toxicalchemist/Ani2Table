@@ -1,5 +1,7 @@
 import { pool } from '../config/db.js';
 
+const LOW_STOCK_THRESHOLD = parseInt(process.env.LOW_STOCK_THRESHOLD) || 5;
+
 // Create order from cart
 export const createOrder = async (req, res) => {
   const connection = await pool.getConnection();
@@ -9,9 +11,9 @@ export const createOrder = async (req, res) => {
 
     const { paymentMethod, deliveryAddress, notes } = req.body;
 
-    // Get cart items
+    // Get cart items (include product name for clearer errors)
     const [cartItems] = await connection.query(
-      `SELECT c.product_id, c.quantity, p.price, p.quantity as stock, p.farmer_id
+      `SELECT c.product_id, c.quantity, p.price, p.quantity as stock, p.farmer_id, p.name as product_name
        FROM cart c
        JOIN products p ON c.product_id = p.id
        WHERE c.consumer_id = ? AND p.status = 'available'`,
@@ -23,15 +25,26 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Cart is empty' });
     }
 
-    // Check stock availability
+    // Check stock availability for all items and collect problems
+    const insufficient = [];
     for (const item of cartItems) {
       if (item.stock < item.quantity) {
-        await connection.rollback();
-        return res.status(400).json({ 
-          success: false, 
-          error: `Insufficient stock for product ID ${item.product_id}` 
+        insufficient.push({
+          productId: item.product_id,
+          productName: item.product_name,
+          requested: item.quantity,
+          available: item.stock
         });
       }
+    }
+
+    if (insufficient.length > 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: 'Insufficient stock for one or more items',
+        details: insufficient
+      });
     }
 
     // Calculate total
@@ -48,7 +61,7 @@ export const createOrder = async (req, res) => {
 
     const orderId = orderResult.insertId;
 
-    // Create order items and update product quantities
+    // Create order items (do NOT adjust inventory yet; inventory is adjusted on delivery)
     for (const item of cartItems) {
       const subtotal = parseFloat(item.price) * item.quantity;
       
@@ -56,11 +69,6 @@ export const createOrder = async (req, res) => {
         `INSERT INTO order_items (order_id, product_id, farmer_id, quantity, price, subtotal)
          VALUES (?, ?, ?, ?, ?, ?)`,
         [orderId, item.product_id, item.farmer_id, item.quantity, item.price, subtotal]
-      );
-
-      await connection.query(
-        'UPDATE products SET quantity = quantity - ? WHERE id = ?',
-        [item.quantity, item.product_id]
       );
     }
 
@@ -252,13 +260,85 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid status' });
     }
 
-    // Check if order exists
-    const [orders] = await pool.query('SELECT id FROM orders WHERE id = ?', [req.params.id]);
+    // Check if order exists and get current status and inventory flag
+    const [orders] = await pool.query('SELECT id, status, IFNULL(inventory_adjusted, 0) as inventory_adjusted FROM orders WHERE id = ?', [req.params.id]);
 
     if (orders.length === 0) {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
+    const currentStatus = orders[0].status;
+
+    // If status becomes 'delivered', and inventory hasn't been adjusted, decrement product stock
+    const inventoryAdjusted = orders[0].inventory_adjusted === 1;
+
+    if (status === 'delivered' && !inventoryAdjusted) {
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+
+        const [items] = await connection.query('SELECT product_id, quantity FROM order_items WHERE order_id = ?', [req.params.id]);
+
+        for (const item of items) {
+          // Decrement with floor at 0 and set low stock flag/status
+          await connection.query(
+            `UPDATE products
+             SET quantity = GREATEST(quantity - ?, 0),
+                 is_low_stock = CASE WHEN GREATEST(quantity - ?, 0) <= ? THEN 1 ELSE 0 END,
+                 status = CASE WHEN GREATEST(quantity - ?, 0) <= 0 THEN 'out_of_stock' ELSE 'available' END
+             WHERE id = ?`,
+            [item.quantity, item.quantity, LOW_STOCK_THRESHOLD, item.product_id]
+          );
+        }
+
+        await connection.query('UPDATE orders SET status = ?, inventory_adjusted = 1 WHERE id = ?', [status, req.params.id]);
+
+        await connection.commit();
+        connection.release();
+
+        return res.json({ success: true, message: 'Order marked delivered and inventory adjusted' });
+      } catch (err) {
+        await connection.rollback();
+        connection.release();
+        console.error('Error adjusting inventory on delivery:', err);
+        return res.status(500).json({ success: false, error: 'Failed to adjust inventory on delivery' });
+      }
+    }
+
+    // If cancelling an order and inventory was already adjusted (delivered), restore stock
+    if (status === 'cancelled' && inventoryAdjusted) {
+      const connection = await pool.getConnection();
+      try {
+        await connection.beginTransaction();
+
+        const [items] = await connection.query('SELECT product_id, quantity FROM order_items WHERE order_id = ?', [req.params.id]);
+
+        for (const item of items) {
+          await connection.query(
+            `UPDATE products
+             SET quantity = quantity + ?,
+                 is_low_stock = CASE WHEN (quantity + ?) <= ? THEN 1 ELSE 0 END,
+                 status = CASE WHEN (quantity + ?) <= 0 THEN 'out_of_stock' ELSE 'available' END
+             WHERE id = ?`,
+            [item.quantity, item.quantity, LOW_STOCK_THRESHOLD, item.quantity, item.product_id]
+          );
+        }
+
+        await connection.query('UPDATE orders SET status = ?, inventory_adjusted = 0 WHERE id = ?', [status, req.params.id]);
+
+        await connection.commit();
+        connection.release();
+
+        return res.json({ success: true, message: 'Order cancelled and inventory restored' });
+      } catch (err) {
+        await connection.rollback();
+        connection.release();
+        console.error('Error restoring stock on cancel after delivery:', err);
+        return res.status(500).json({ success: false, error: 'Failed to cancel order and restore stock' });
+      }
+    }
+
+    // For other status changes (or cancelling where inventory wasn't adjusted), just update the status
     await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
 
     res.json({

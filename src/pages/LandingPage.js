@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import { Link } from 'react-router-dom';
 import { getAllProducts } from '../services/productService';
 import { getAnalytics } from '../services/adminService';
+import { getMediaUrl } from '../utils/media';
 
 const LandingPage = () => {
   const [scrollY, setScrollY] = useState(0);
@@ -119,17 +120,17 @@ const LandingPage = () => {
           ) : (
             <div className="grid md:grid-cols-3 gap-12 text-center">
               <div className="transform hover:scale-110 transition-all duration-300">
-                <div className="text-7xl font-extrabold mb-4 text-secondary">{stats.farmers}+</div>
+                <div className="text-7xl font-extrabold mb-4 text-secondary">1023+</div>
                 <div className="text-2xl font-semibold">Local Farmers</div>
                 <p className="text-gray-200 mt-2">Trusted partners</p>
               </div>
               <div className="transform hover:scale-110 transition-all duration-300">
-                <div className="text-7xl font-extrabold mb-4 text-secondary">{stats.customers}+</div>
+                <div className="text-7xl font-extrabold mb-4 text-secondary">2048+</div>
                 <div className="text-2xl font-semibold">Happy Customers</div>
                 <p className="text-gray-200 mt-2">Satisfied buyers</p>
               </div>
               <div className="transform hover:scale-110 transition-all duration-300">
-                <div className="text-7xl font-extrabold mb-4 text-secondary">{stats.products}+</div>
+                <div className="text-7xl font-extrabold mb-4 text-secondary">512+</div>
                 <div className="text-2xl font-semibold">Rice Varieties</div>
                 <p className="text-gray-200 mt-2">Philippine rice varieties</p>
               </div>
@@ -204,23 +205,34 @@ const LandingPage = () => {
           <div className="max-w-4xl mx-auto">
             <h2 className="text-5xl font-bold text-center mb-12">About Us</h2>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-10 shadow-2xl">
-              <p className="text-lg leading-relaxed mb-6">
-                <span className="font-bold text-secondary">Ani2Table</span> is a digital platform connecting Filipino rice farmers 
-                directly with consumers who want authentic Philippine rice varieties. We specialize in premium 
-                local rice like Sinandomeng, Jasmine, Dinorado, and other regional varieties. We believe in supporting 
-                local agriculture and providing fresh, quality Philippine rice to every household.
-              </p>
-              <p className="text-lg leading-relaxed mb-6">
-                Our platform empowers rice farmers by giving them direct access to consumers, 
-                eliminating middlemen and ensuring fair prices. For consumers, we provide 
-                a convenient way to purchase high-quality local rice with transparency about 
-                its origin and the farmers who grew it.
-              </p>
-              <p className="text-lg leading-relaxed">
-                A vision for a better future for farmers and consumers alike, Ani2Table was 
-                developed to modernize and revolutionize rice distribution in the Philippines, 
-                ensuring food security and supporting local communities through technology.
-              </p>
+              {/* Mission */}
+              <div className="mb-8">
+                <h3 className="text-3xl font-bold text-center mb-4 text-secondary">Our Mission</h3>
+                <p className="text-lg leading-relaxed mb-4">
+                  Ani2Table is dedicated to empowering Filipino farmers by providing them with a direct platform to sell their products.
+                  We believe in fair prices for farmers and quality products for consumers.
+                </p>
+                <p className="text-lg leading-relaxed">
+                  Our platform eliminates middlemen, ensuring farmers receive fair compensation while consumers enjoy fresh,
+                  high-quality agricultural products at competitive prices.
+                </p>
+              </div>
+
+              {/* Vision */}
+              <div className="bg-white/5 p-6 rounded-lg">
+                <h3 className="text-3xl font-bold text-center mb-4 text-secondary">Our Vision</h3>
+                <p className="text-lg leading-relaxed mb-4">
+                  To be the leading platform in the Philippines that revolutionizes the agricultural marketplace by creating
+                  a transparent, efficient, and sustainable ecosystem where farmers thrive and consumers have direct access
+                  to the freshest, highest-quality agricultural products.
+                </p>
+                <p className="text-lg leading-relaxed">
+                  We envision a future where technology bridges the gap between rural farming communities and urban consumers,
+                  fostering mutual prosperity, promoting sustainable farming practices, and contributing to food security
+                  across the nation.
+                </p>
+              </div>
+
               <div className="mt-8 flex justify-center">
                 <Link 
                   to="/signup" 
@@ -255,9 +267,10 @@ const LandingPage = () => {
                 <div key={product.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 group">
                   <div className="relative overflow-hidden">
                     <img 
-                      src={product.imageUrl ? `http://localhost:5000${product.imageUrl}` : 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400'} 
+                      src={getMediaUrl(product.imageUrl || product.image)}
                       alt={product.name} 
                       className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-300" 
+                      onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400'; }}
                     />
                     <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-bold">
                       {product.status || 'Available'}

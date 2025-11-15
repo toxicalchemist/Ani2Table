@@ -61,6 +61,19 @@ const ConsumerProducts = () => {
     return matchesCategory && matchesSearch;
   });
 
+  // Resolve media/image URL coming from backend. Backend may return `imageUrl` (relative path)
+  // or `image` (absolute URL). This helper returns a full URL or a placeholder.
+  const getMediaUrl = (path) => {
+    const placeholder = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400';
+    if (!path) return placeholder;
+    // Already absolute
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    // If API URL present in env, strip trailing /api and use origin
+    const api = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    const origin = api.replace(/\/api\/?$/, '') || 'http://localhost:5000';
+    return `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar userType="consumer" />
@@ -116,7 +129,12 @@ const ConsumerProducts = () => {
               onClick={() => handleProductClick(product)}
             >
               <div className="relative">
-                <img src={product.image} alt={product.name} className="w-full h-48 object-cover" />
+                <img
+                  src={getMediaUrl(product.imageUrl || product.image)}
+                  alt={product.name}
+                  className="w-full h-48 object-cover"
+                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400'; }}
+                />
                 <span className="absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold bg-green-500 text-white">
                   {product.status}
                 </span>
@@ -162,10 +180,11 @@ const ConsumerProducts = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl overflow-hidden">
               <div className="relative">
-                <img 
-                  src={selectedProduct.image} 
+                <img
+                  src={getMediaUrl(selectedProduct.imageUrl || selectedProduct.image)}
                   alt={selectedProduct.name}
                   className="w-full h-72 object-cover"
+                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=1200'; }}
                 />
                 <button 
                   onClick={() => setShowDetailModal(false)} 

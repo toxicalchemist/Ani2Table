@@ -5,10 +5,11 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const getToken = () => localStorage.getItem('ani2table_token');
 
 // Get analytics data
-export const getAnalytics = async () => {
+export const getAnalytics = async (period = 'monthly') => {
   try {
     const token = getToken();
-    const response = await fetch(`${API_URL}/admin/analytics`, {
+    const url = `${API_URL}/admin/analytics?period=${encodeURIComponent(period)}`;
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },

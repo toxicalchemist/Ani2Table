@@ -3,6 +3,7 @@ import Sidebar from '../../components/Sidebar';
 import ProductCard from '../../components/ProductCard';
 import Toast from '../../components/Toast';
 import { getAllProducts, createProduct, updateProduct, deleteProduct } from '../../services/productService';
+import { getMediaUrl } from '../../utils/media';
 import { getCurrentUser } from '../../services/authService';
 
 const FarmerProducts = () => {
@@ -233,9 +234,10 @@ const FarmerProducts = () => {
             <div key={product.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
               <div className="relative">
                 <img 
-                  src={product.image} 
+                  src={getMediaUrl(product.imageUrl || product.image)} 
                   alt={product.name}
                   className="w-full h-48 object-cover"
+                  onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-rice.jpg'; }}
                 />
                 <span className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold ${
                   product.stock === 0 ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
@@ -430,9 +432,10 @@ const FarmerProducts = () => {
             <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl overflow-hidden">
               <div className="relative">
                 <img 
-                  src={selectedProduct.imageUrl ? `http://localhost:5000${selectedProduct.imageUrl}` : selectedProduct.image || '/placeholder-rice.jpg'} 
+                  src={getMediaUrl(selectedProduct.imageUrl || selectedProduct.image)} 
                   alt={selectedProduct.name}
                   className="w-full h-64 object-cover"
+                  onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-rice.jpg'; }}
                 />
                 <button 
                   onClick={() => setShowViewModal(false)} 

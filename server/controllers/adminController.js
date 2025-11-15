@@ -3,6 +3,7 @@ import { pool } from '../config/db.js';
 // Get analytics data (admin only)
 export const getAnalytics = async (req, res) => {
   try {
+    const { period } = req.query; // expected values: 'weekly', 'monthly', 'all'
     // Get total users by type
     const [userStats] = await pool.query(`
       SELECT user_type, COUNT(*) as count
@@ -51,18 +52,49 @@ export const getAnalytics = async (req, res) => {
       LIMIT 5
     `);
 
-    // Get monthly revenue
-    const [monthlyRevenue] = await pool.query(`
-      SELECT 
-        DATE_FORMAT(created_at, '%Y-%m') as month,
-        SUM(total_amount) as revenue,
-        COUNT(*) as order_count
-      FROM orders
-      WHERE status = 'delivered'
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-      ORDER BY month
-    `);
+    // Get time-series revenue based on requested period
+    let timeSeriesQuery;
+    if (period === 'weekly') {
+      // last 7 days grouped by day
+      timeSeriesQuery = `
+        SELECT 
+          DATE_FORMAT(created_at, '%Y-%m-%d') as month,
+          SUM(total_amount) as revenue,
+          COUNT(*) as order_count
+        FROM orders
+        WHERE status = 'delivered'
+          AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+        ORDER BY month
+      `;
+    } else if (period === 'all') {
+      // all time grouped by year-month
+      timeSeriesQuery = `
+        SELECT 
+          DATE_FORMAT(created_at, '%Y-%m') as month,
+          SUM(total_amount) as revenue,
+          COUNT(*) as order_count
+        FROM orders
+        WHERE status = 'delivered'
+        GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+        ORDER BY month
+      `;
+    } else {
+      // default monthly - last 12 months
+      timeSeriesQuery = `
+        SELECT 
+          DATE_FORMAT(created_at, '%Y-%m') as month,
+          SUM(total_amount) as revenue,
+          COUNT(*) as order_count
+        FROM orders
+        WHERE status = 'delivered'
+          AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+        GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+        ORDER BY month
+      `;
+    }
+
+    const [monthlyRevenue] = await pool.query(timeSeriesQuery);
 
     res.json({
       success: true,

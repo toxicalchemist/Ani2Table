@@ -23,12 +23,12 @@ const ConsumerCart = () => {
       const items = (result.cartItems || []).map(item => ({
         id: item.id,
         productId: item.product.id,
-        productName: item.product.name,
+        name: item.product.name,
         price: item.product.price,
         quantity: item.quantity,
-        unit: item.product.unit,
-        imageUrl: item.product.imageUrl,
-        farmerName: item.product.farmerName
+        unit: item.product.unit || 'kg',
+        image: item.product.imageUrl,
+        farmer: item.product.farmerName
       }));
       setCartItems(items);
     } else {
@@ -59,7 +59,13 @@ const ConsumerCart = () => {
       }, 5000);
       await loadCart(); // Reload cart (should be empty after checkout)
     } else {
-      setToast({ message: result.error || 'Failed to place order', type: 'error' });
+      // If server returned details about insufficient stock, show them clearly
+      if (result.details && Array.isArray(result.details) && result.details.length > 0) {
+        const msg = result.details.map(d => `${d.productName}: requested ${d.requested}kg, available ${d.available}kg`).join('; ');
+        setToast({ message: `Cannot place order — insufficient stock: ${msg}`, type: 'error' });
+      } else {
+        setToast({ message: result.error || 'Failed to place order', type: 'error' });
+      }
     }
     setLoading(false);
   };

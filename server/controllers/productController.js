@@ -45,7 +45,9 @@ export const getAllProducts = async (req, res) => {
         category: p.category,
         price: parseFloat(p.price),
         quantity: p.quantity,
-        unit: p.unit,
+        stock: p.quantity,
+        isLowStock: !!p.is_low_stock,
+        unit: p.unit || 'kg',
         imageUrl: p.image_url,
         status: p.status,
         createdAt: p.created_at
@@ -88,7 +90,9 @@ export const getProduct = async (req, res) => {
         category: p.category,
         price: parseFloat(p.price),
         quantity: p.quantity,
-        unit: p.unit,
+        stock: p.quantity,
+        isLowStock: !!p.is_low_stock,
+        unit: p.unit || 'kg',
         imageUrl: p.image_url,
         status: p.status,
         createdAt: p.created_at
@@ -188,21 +192,27 @@ export const updateProduct = async (req, res) => {
 // Delete product (farmers only)
 export const deleteProduct = async (req, res) => {
   try {
-    // Check if product belongs to farmer
+    const productId = Number(req.params.id);
+    console.log(`Delete product request: productId=${req.params.id} (parsed ${productId}), userId=${req.user?.id}, userType=${req.user?.userType}`);
+
+    // Check if product exists and belongs to farmer
     const [products] = await pool.query(
       'SELECT farmer_id FROM products WHERE id = ?',
-      [req.params.id]
+      [productId]
     );
 
     if (products.length === 0) {
+      console.warn(`Delete failed: product id ${productId} not found`);
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
 
     if (products[0].farmer_id !== req.user.id && req.user.userType !== 'admin') {
+      console.warn(`Delete unauthorized: user ${req.user.id} (${req.user.userType}) cannot delete product owned by ${products[0].farmer_id}`);
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 
-    await pool.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+    const [delResult] = await pool.query('DELETE FROM products WHERE id = ?', [productId]);
+    console.log(`Delete result for product ${productId}: affectedRows=${delResult.affectedRows}`);
 
     res.json({
       success: true,

@@ -11,6 +11,8 @@
     "react-router-dom": "^6.20.0",
     "react-scripts": "5.0.1",
     "recharts": "^2.10.0",
+    "jspdf": "^2.5.1",
+    "html2canvas": "^1.4.1",
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {

@@ -65,7 +65,7 @@ const AdminProducts = () => {
                           rejectedProducts;
 
   // Check for low stock or out of stock items (only approved products)
-  const lowStockProducts = approvedProducts.filter(p => p.quantity > 0 && p.quantity < 100);
+  const lowStockProducts = approvedProducts.filter(p => p.quantity > 0 && p.isLowStock);
   const outOfStockProducts = approvedProducts.filter(p => p.quantity === 0);
 
   const handleEditProduct = (product) => {
@@ -87,7 +87,9 @@ const AdminProducts = () => {
 
   const handleDeleteProduct = async (productId, productName) => {
     if (window.confirm(`Are you sure you want to delete ${productName}?`)) {
+      console.log('Requesting delete for productId=', productId);
       const result = await deleteProduct(productId);
+      console.log('Delete response:', result);
       if (result.success) {
         setToast({ message: `${productName} has been deleted`, type: 'success' });
         await loadProducts();
@@ -150,7 +152,7 @@ const AdminProducts = () => {
                     <h3 className="font-bold text-yellow-800 text-lg">Low Stock Warning</h3>
                     <p className="text-yellow-700 mt-1">
                       {lowStockProducts.length} product(s) have low stock: {' '}
-                      <span className="font-semibold">{lowStockProducts.map(p => `${p.name} (${p.stock} kg)`).join(', ')}</span>
+                      <span className="font-semibold">{lowStockProducts.map(p => `${p.name} (${p.quantity} ${p.unit || 'kg'})`).join(', ')}</span>
                     </p>
                   </div>
                 </div>
@@ -224,13 +226,18 @@ const AdminProducts = () => {
                   alt={product.name}
                   className="w-full h-48 object-cover"
                 />
-                <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold ${
-                  product.status === 'pending' ? 'bg-blue-500 text-white' :
-                  product.status === 'available' ? 'bg-green-500 text-white' :
-                  'bg-red-500 text-white'
-                }`}>
-                  {product.status}
-                </span>
+                <div className="absolute top-3 right-3 flex flex-col items-end space-y-1">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    product.status === 'pending' ? 'bg-blue-500 text-white' :
+                    product.status === 'available' ? 'bg-green-500 text-white' :
+                    'bg-red-500 text-white'
+                  }`}>
+                    {product.status}
+                  </span>
+                  {product.isLowStock && product.quantity > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-400 text-yellow-900">Low</span>
+                  )}
+                </div>
               </div>
               <div className="p-5">
                 <h3 className="font-bold text-xl text-gray-800 mb-2">{product.name}</h3>
@@ -240,7 +247,7 @@ const AdminProducts = () => {
                 </p>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-2xl font-bold text-primary">₱{product.price}</span>
-                  <span className="text-gray-600">Stock: {product.quantity} {product.unit}</span>
+                  <span className="text-gray-600">Stock: {product.quantity} {product.unit || 'kg'}</span>
                 </div>
                 
                 {/* Action Buttons */}

@@ -1,9 +1,8 @@
 import React from 'react';
+import { getMediaUrl } from '../utils/media';
 
 const ProductCard = ({ product, onClick }) => {
-  const imageUrl = product.imageUrl 
-    ? `http://localhost:5000${product.imageUrl}` 
-    : product.image || '/placeholder-rice.jpg';
+  const imageUrl = getMediaUrl(product.imageUrl || product.image);
 
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition cursor-pointer" onClick={onClick}>
@@ -12,6 +11,7 @@ const ProductCard = ({ product, onClick }) => {
           src={imageUrl} 
           alt={product.name} 
           className="w-full h-48 object-cover"
+          onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-rice.jpg'; }}
         />
         {product.status && (
           <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold ${
