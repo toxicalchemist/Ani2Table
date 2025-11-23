@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
-import ProductCard from '../../components/ProductCard';
+// ProductCard not used here; removed to satisfy ESLint
 import Toast from '../../components/Toast';
 import { getAllProducts } from '../../services/productService';
 import { addToCart } from '../../services/cartService';
@@ -125,49 +125,58 @@ const ConsumerProducts = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((product) => (
-            <div 
-              key={product.id} 
-              className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition cursor-pointer transform hover:scale-105"
-              onClick={() => handleProductClick(product)}
-            >
-              <div className="relative">
-                <img
-                  src={getMediaUrl(product.imageUrl || product.image)}
-                  alt={product.name}
-                  className="w-full h-48 object-cover"
-                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400'; }}
-                />
-                <span className="absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold bg-green-500 text-white">
-                  {product.status}
-                </span>
-              </div>
-              <div className="p-5">
-                <h3 className="font-bold text-xl text-gray-800 mb-1">{product.name}</h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  {product.farmer}
-                </p>
-                <p className="text-xs text-gray-500 mb-3 bg-gray-100 inline-block px-2 py-1 rounded">{product.type}</p>
-                <div className="flex items-center justify-between mb-4 pb-4 border-b">
-                  <div className="text-2xl font-bold text-primary">₱{product.price}<span className="text-sm text-gray-500">/kg</span></div>
-                  <div className="flex items-center">
-                    <span className="text-yellow-500 text-lg mr-1">⭐</span>
-                    <span className="font-bold text-lg">{product.rating}</span>
-                    <span className="text-gray-500 text-sm ml-1">({product.reviews})</span>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading products...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProducts.map((product) => (
+              <div 
+                key={product.id} 
+                className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition cursor-pointer transform hover:scale-105"
+                onClick={() => handleProductClick(product)}
+              >
+                <div className="relative">
+                  <img
+                    src={getMediaUrl(product.imageUrl || product.image)}
+                    alt={product.name}
+                    className="w-full h-48 object-cover"
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400'; }}
+                  />
+                  <span className="absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold bg-green-500 text-white">
+                    {product.status}
+                  </span>
+                </div>
+                <div className="p-5">
+                  <h3 className="font-bold text-xl text-gray-800 mb-1">{product.name}</h3>
+                  <p className="text-sm text-gray-600 mb-2">
+                    <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    {product.farmer}
+                  </p>
+                  <p className="text-xs text-gray-500 mb-3 bg-gray-100 inline-block px-2 py-1 rounded">{product.type}</p>
+                  <div className="flex items-center justify-between mb-4 pb-4 border-b">
+                    <div className="text-2xl font-bold text-primary">₱{product.price}<span className="text-sm text-gray-500">/kg</span></div>
+                    <div className="flex items-center">
+                      <span className="text-yellow-500 text-lg mr-1">⭐</span>
+                      <span className="font-bold text-lg">{product.rating}</span>
+                      <span className="text-gray-500 text-sm ml-1">({product.reviews})</span>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 mb-2">Stock Available: <span className="font-bold">{product.stock} kg</span></p>
+                    <p className="text-primary font-semibold">Click to view details →</p>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-2">Stock Available: <span className="font-bold">{product.stock} kg</span></p>
-                  <p className="text-primary font-semibold">Click to view details →</p>
-                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {filteredProducts.length === 0 && (
           <div className="text-center py-12">
