@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import { Link } from 'react-router-dom';
 import { getAllProducts } from '../services/productService';
 import { getMediaUrl } from '../utils/media';
+import { filterCategories } from '../utils/categoryFilter';
 
 const PublicProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -32,13 +33,15 @@ const PublicProducts = () => {
     }
   };
 
-  const categories = [
+  const allCategories = [
     { id: 'all', name: 'All Rice', icon: '🌾' },
     { id: 'Rice', name: 'Rice', icon: '🍚' },
     { id: 'Vegetables', name: 'Vegetables', icon: '🥬' },
     { id: 'Fruits', name: 'Fruits', icon: '🍎' },
     { id: 'Grains', name: 'Grains', icon: '🌾' },
   ];
+
+  const categories = filterCategories(allCategories);
 
   const filteredProducts = products
     .filter(product => {
@@ -270,7 +273,7 @@ const PublicProducts = () => {
             </div>
             <span className="font-bold text-xl">ANI2TABLE</span>
           </div>
-          <p className="text-gray-200">&copy; 2024 Ani2Table. Supporting Filipino Farmers.</p>
+          <p className="text-gray-200">&copy; 2025 Ani2Table. Supporting Filipino Farmers.</p>
         </div>
       </footer>
     </div>

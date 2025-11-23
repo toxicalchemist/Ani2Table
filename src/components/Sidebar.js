@@ -45,8 +45,19 @@ const Sidebar = ({ userType }) => {
     <aside className="w-64 bg-primary min-h-screen text-white p-4 flex flex-col">
       <div className="mb-8">
         <div className="flex items-center justify-center space-x-2 mb-6">
-          <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-2xl">A</span>
+          <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center overflow-hidden">
+            <img
+              src="/logo/ani2table-logo.png"
+              alt="Ani2Table"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // hide broken image and reveal fallback letter
+                e.target.style.display = 'none';
+                const fb = e.target.parentNode.querySelector('.logo-fallback');
+                if (fb) fb.style.display = 'flex';
+              }}
+            />
+            <span className="logo-fallback text-white font-bold text-2xl" style={{display: 'none'}}>A</span>
           </div>
           <span className="font-bold text-xl">ANI2TABLE</span>
         </div>

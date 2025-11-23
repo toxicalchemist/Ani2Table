@@ -4,6 +4,7 @@ import ProductCard from '../../components/ProductCard';
 import Toast from '../../components/Toast';
 import { getAllProducts } from '../../services/productService';
 import { addToCart } from '../../services/cartService';
+import { filterCategories } from '../../utils/categoryFilter';
 
 const ConsumerProducts = () => {
   const [products, setProducts] = useState([]);
@@ -47,13 +48,16 @@ const ConsumerProducts = () => {
     }
   };
 
-  const categories = [
+  const allCategories = [
     { key: 'all', label: 'All' },
     { key: 'Rice', label: 'Rice' },
     { key: 'Vegetables', label: 'Vegetables' },
     { key: 'Fruits', label: 'Fruits' },
     { key: 'Grains', label: 'Grains' },
   ];
+
+  // Filter out non-rice categories
+  const categories = filterCategories(allCategories).map(c => ({ key: c.id || c.key || c, label: c.name || c.label || c }));
 
   const filteredProducts = products.filter(product => {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
