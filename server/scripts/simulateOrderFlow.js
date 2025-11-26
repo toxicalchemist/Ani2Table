@@ -9,17 +9,37 @@ if (typeof fetch === 'function') {
 
 const API = process.env.API_URL || 'http://localhost:5000/api';
 
+async function checkApi() {
+  try {
+    const res = await fetchFn(`${API}/health`);
+    if (!res.ok) {
+      throw new Error(`Health check failed: ${res.status} ${res.statusText}`);
+    }
+    console.log('API health check OK');
+  } catch (err) {
+    throw new Error(`API not reachable at ${API}: ${err.message}`);
+  }
+}
+
 async function login(username, password) {
   const res = await fetchFn(`${API}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
   });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Login failed: ${res.status} ${res.statusText}: ${text}`);
+  }
   return res.json();
 }
 
 async function getProduct(id) {
   const res = await fetchFn(`${API}/products/${id}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`getProduct failed: ${res.status} ${res.statusText}: ${text}`);
+  }
   return res.json();
 }
 
@@ -29,6 +49,10 @@ async function addToCart(token, productId, quantity) {
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({ productId, quantity })
   });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`addToCart failed: ${res.status} ${res.statusText}: ${text}`);
+  }
   return res.json();
 }
 
@@ -38,6 +62,10 @@ async function createOrder(token) {
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({ paymentMethod: 'cash', deliveryAddress: 'Test address', notes: 'Sim test' })
   });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`createOrder failed: ${res.status} ${res.statusText}: ${text}`);
+  }
   return res.json();
 }
 
@@ -47,11 +75,16 @@ async function updateOrderStatus(token, orderId, status) {
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({ status })
   });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`updateOrderStatus failed: ${res.status} ${res.statusText}: ${text}`);
+  }
   return res.json();
 }
 
 async function run() {
   try {
+    await checkApi();
     console.log('Logging in as consumer...');
     const consumerLogin = await login('consumer', 'password');
     if (!consumerLogin.success) throw new Error('Consumer login failed: ' + consumerLogin.error);

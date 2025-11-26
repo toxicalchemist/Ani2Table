@@ -280,15 +280,22 @@ export const updateOrderStatus = async (req, res) => {
         const [items] = await connection.query('SELECT product_id, quantity FROM order_items WHERE order_id = ?', [req.params.id]);
 
         for (const item of items) {
-          // Decrement with floor at 0 and set low stock flag/status
-          await connection.query(
-            `UPDATE products
-             SET quantity = GREATEST(quantity - ?, 0),
-                 is_low_stock = CASE WHEN GREATEST(quantity - ?, 0) <= ? THEN 1 ELSE 0 END,
-                 status = CASE WHEN GREATEST(quantity - ?, 0) <= 0 THEN 'out_of_stock' ELSE 'available' END
-             WHERE id = ?`,
-            [item.quantity, item.quantity, LOW_STOCK_THRESHOLD, item.product_id]
-          );
+          const qty = Number(item.quantity);
+          // Decrement with floor at 0
+          const decSql = 'UPDATE products SET quantity = GREATEST(quantity - ?, 0) WHERE id = ?';
+          const decParams = [qty, item.product_id];
+          console.log('Executing SQL (delivery dec):', decSql, decParams);
+          if (!item.product_id || Number.isNaN(qty)) {
+            console.warn('Skipping inventory update for invalid item', item);
+            continue;
+          }
+          await connection.query(decSql, decParams);
+
+          // Update low stock flag and status based on new quantity
+          const flagSql = 'UPDATE products SET is_low_stock = CASE WHEN quantity <= ? THEN 1 ELSE 0 END, status = CASE WHEN quantity <= 0 THEN \"out_of_stock\" ELSE \"available\" END WHERE id = ?';
+          const flagParams = [LOW_STOCK_THRESHOLD, item.product_id];
+          console.log('Executing SQL (delivery flag):', flagSql, flagParams);
+          await connection.query(flagSql, flagParams);
         }
 
         await connection.query('UPDATE orders SET status = ?, inventory_adjusted = 1 WHERE id = ?', [status, req.params.id]);
@@ -300,7 +307,7 @@ export const updateOrderStatus = async (req, res) => {
       } catch (err) {
         await connection.rollback();
         connection.release();
-        console.error('Error adjusting inventory on delivery:', err);
+        console.error('Error adjusting inventory on delivery:', err.message || err, 'sql:', err.sql || '', 'sqlMessage:', err.sqlMessage || '');
         return res.status(500).json({ success: false, error: 'Failed to adjust inventory on delivery' });
       }
     }
@@ -314,14 +321,22 @@ export const updateOrderStatus = async (req, res) => {
         const [items] = await connection.query('SELECT product_id, quantity FROM order_items WHERE order_id = ?', [req.params.id]);
 
         for (const item of items) {
-          await connection.query(
-            `UPDATE products
-             SET quantity = quantity + ?,
-                 is_low_stock = CASE WHEN (quantity + ?) <= ? THEN 1 ELSE 0 END,
-                 status = CASE WHEN (quantity + ?) <= 0 THEN 'out_of_stock' ELSE 'available' END
-             WHERE id = ?`,
-            [item.quantity, item.quantity, LOW_STOCK_THRESHOLD, item.quantity, item.product_id]
-          );
+          const qty = Number(item.quantity);
+            // Increase quantity
+            const incSql = 'UPDATE products SET quantity = quantity + ? WHERE id = ?';
+            const incParams = [qty, item.product_id];
+            console.log('Executing SQL (restore inc):', incSql, incParams);
+            if (!item.product_id || Number.isNaN(qty)) {
+              console.warn('Skipping inventory restore for invalid item', item);
+              continue;
+            }
+            await connection.query(incSql, incParams);
+
+            // Update low stock flag and status again
+            const flagSqlRestore = 'UPDATE products SET is_low_stock = CASE WHEN quantity <= ? THEN 1 ELSE 0 END, status = CASE WHEN quantity <= 0 THEN \"out_of_stock\" ELSE \"available\" END WHERE id = ?';
+            const flagParamsRestore = [LOW_STOCK_THRESHOLD, item.product_id];
+            console.log('Executing SQL (restore flag):', flagSqlRestore, flagParamsRestore);
+            await connection.query(flagSqlRestore, flagParamsRestore);
         }
 
         await connection.query('UPDATE orders SET status = ?, inventory_adjusted = 0 WHERE id = ?', [status, req.params.id]);
@@ -333,7 +348,7 @@ export const updateOrderStatus = async (req, res) => {
       } catch (err) {
         await connection.rollback();
         connection.release();
-        console.error('Error restoring stock on cancel after delivery:', err);
+          console.error('Error restoring stock on cancel after delivery:', err.message || err, 'sql:', err.sql || '', 'sqlMessage:', err.sqlMessage || '');
         return res.status(500).json({ success: false, error: 'Failed to cancel order and restore stock' });
       }
     }
@@ -346,7 +361,7 @@ export const updateOrderStatus = async (req, res) => {
       message: 'Order status updated'
     });
   } catch (error) {
-    console.error('Update order status error:', error);
+    console.error('Update order status error:', error.message || error, 'sql:', error.sql || '', 'sqlMessage:', error.sqlMessage || '');
     res.status(500).json({ success: false, error: 'Server error' });
   }
 };
