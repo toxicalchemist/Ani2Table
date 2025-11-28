@@ -280,14 +280,16 @@ export const updateOrderStatus = async (req, res) => {
         const [items] = await connection.query('SELECT product_id, quantity FROM order_items WHERE order_id = ?', [req.params.id]);
 
         for (const item of items) {
-          // Decrement with floor at 0 and set low stock flag/status
+          // Lock the product row and compute new values in JS to avoid SQL parsing issues
+          const [productRows] = await connection.query('SELECT quantity FROM products WHERE id = ? FOR UPDATE', [item.product_id]);
+          const currentQty = productRows.length ? Number(productRows[0].quantity) : 0;
+          const newQty = Math.max(currentQty - item.quantity, 0);
+          const isLow = newQty <= LOW_STOCK_THRESHOLD ? 1 : 0;
+          const newStatus = newQty <= 0 ? 'out_of_stock' : 'available';
+
           await connection.query(
-            `UPDATE products
-             SET quantity = GREATEST(quantity - ?, 0),
-                 is_low_stock = CASE WHEN GREATEST(quantity - ?, 0) <= ? THEN 1 ELSE 0 END,
-                 status = CASE WHEN GREATEST(quantity - ?, 0) <= 0 THEN 'out_of_stock' ELSE 'available' END
-             WHERE id = ?`,
-            [item.quantity, item.quantity, LOW_STOCK_THRESHOLD, item.product_id]
+            `UPDATE products SET quantity = ?, is_low_stock = ?, status = ? WHERE id = ?`,
+            [newQty, isLow, newStatus, item.product_id]
           );
         }
 
@@ -314,13 +316,16 @@ export const updateOrderStatus = async (req, res) => {
         const [items] = await connection.query('SELECT product_id, quantity FROM order_items WHERE order_id = ?', [req.params.id]);
 
         for (const item of items) {
+          // Lock the product row and compute new values in JS to avoid SQL parsing issues
+          const [productRows] = await connection.query('SELECT quantity FROM products WHERE id = ? FOR UPDATE', [item.product_id]);
+          const currentQty = productRows.length ? Number(productRows[0].quantity) : 0;
+          const newQty = currentQty + item.quantity;
+          const isLow = newQty <= LOW_STOCK_THRESHOLD ? 1 : 0;
+          const newStatus = newQty <= 0 ? 'out_of_stock' : 'available';
+
           await connection.query(
-            `UPDATE products
-             SET quantity = quantity + ?,
-                 is_low_stock = CASE WHEN (quantity + ?) <= ? THEN 1 ELSE 0 END,
-                 status = CASE WHEN (quantity + ?) <= 0 THEN 'out_of_stock' ELSE 'available' END
-             WHERE id = ?`,
-            [item.quantity, item.quantity, LOW_STOCK_THRESHOLD, item.quantity, item.product_id]
+            `UPDATE products SET quantity = ?, is_low_stock = ?, status = ? WHERE id = ?`,
+            [newQty, isLow, newStatus, item.product_id]
           );
         }
 
