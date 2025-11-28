@@ -280,6 +280,7 @@ export const updateOrderStatus = async (req, res) => {
         const [items] = await connection.query('SELECT product_id, quantity FROM order_items WHERE order_id = ?', [req.params.id]);
 
         for (const item of items) {
+<<<<<<< HEAD
           const qty = Number(item.quantity);
           // Decrement with floor at 0
           const decSql = 'UPDATE products SET quantity = GREATEST(quantity - ?, 0) WHERE id = ?';
@@ -296,6 +297,19 @@ export const updateOrderStatus = async (req, res) => {
           const flagParams = [LOW_STOCK_THRESHOLD, item.product_id];
           console.log('Executing SQL (delivery flag):', flagSql, flagParams);
           await connection.query(flagSql, flagParams);
+=======
+          // Lock the product row and compute new values in JS to avoid SQL parsing issues
+          const [productRows] = await connection.query('SELECT quantity FROM products WHERE id = ? FOR UPDATE', [item.product_id]);
+          const currentQty = productRows.length ? Number(productRows[0].quantity) : 0;
+          const newQty = Math.max(currentQty - item.quantity, 0);
+          const isLow = newQty <= LOW_STOCK_THRESHOLD ? 1 : 0;
+          const newStatus = newQty <= 0 ? 'out_of_stock' : 'available';
+
+          await connection.query(
+            `UPDATE products SET quantity = ?, is_low_stock = ?, status = ? WHERE id = ?`,
+            [newQty, isLow, newStatus, item.product_id]
+          );
+>>>>>>> 54921ad231de3e4faff53bb6ea8124b86717d96f
         }
 
         await connection.query('UPDATE orders SET status = ?, inventory_adjusted = 1 WHERE id = ?', [status, req.params.id]);
@@ -321,6 +335,7 @@ export const updateOrderStatus = async (req, res) => {
         const [items] = await connection.query('SELECT product_id, quantity FROM order_items WHERE order_id = ?', [req.params.id]);
 
         for (const item of items) {
+<<<<<<< HEAD
           const qty = Number(item.quantity);
             // Increase quantity
             const incSql = 'UPDATE products SET quantity = quantity + ? WHERE id = ?';
@@ -337,6 +352,19 @@ export const updateOrderStatus = async (req, res) => {
             const flagParamsRestore = [LOW_STOCK_THRESHOLD, item.product_id];
             console.log('Executing SQL (restore flag):', flagSqlRestore, flagParamsRestore);
             await connection.query(flagSqlRestore, flagParamsRestore);
+=======
+          // Lock the product row and compute new values in JS to avoid SQL parsing issues
+          const [productRows] = await connection.query('SELECT quantity FROM products WHERE id = ? FOR UPDATE', [item.product_id]);
+          const currentQty = productRows.length ? Number(productRows[0].quantity) : 0;
+          const newQty = currentQty + item.quantity;
+          const isLow = newQty <= LOW_STOCK_THRESHOLD ? 1 : 0;
+          const newStatus = newQty <= 0 ? 'out_of_stock' : 'available';
+
+          await connection.query(
+            `UPDATE products SET quantity = ?, is_low_stock = ?, status = ? WHERE id = ?`,
+            [newQty, isLow, newStatus, item.product_id]
+          );
+>>>>>>> 54921ad231de3e4faff53bb6ea8124b86717d96f
         }
 
         await connection.query('UPDATE orders SET status = ?, inventory_adjusted = 0 WHERE id = ?', [status, req.params.id]);
