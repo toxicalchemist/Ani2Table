@@ -11,6 +11,7 @@ export const getAllProducts = async (filters = {}) => {
     if (filters.category) params.append('category', filters.category);
     if (filters.status) params.append('status', filters.status);
     if (filters.farmerId) params.append('farmerId', filters.farmerId);
+    
 
     const url = `${API_URL}/products${params.toString() ? '?' + params.toString() : ''}`;
     const response = await fetch(url);
