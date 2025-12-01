@@ -29,14 +29,9 @@ const ConsumerCart = () => {
         price: item.product.price,
         quantity: item.quantity,
         unit: item.product.unit || 'kg',
-<<<<<<< HEAD
-        image: getMediaUrl(item.product.imageUrl),
-        farmer: item.product.farmerName
-=======
         image: item.product.imageUrl,
         farmer: item.product.farmerName,
         selected: true
->>>>>>> cd7c9ca1cbd943b030a157b1b17bffedcda2ff55
       }));
       setCartItems(items);
     } else {
