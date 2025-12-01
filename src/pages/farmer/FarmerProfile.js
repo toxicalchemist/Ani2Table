@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Toast from '../../components/Toast';
-import { getCurrentUser, getProfile, updateProfile } from '../../services/authService';
+import { getProfile, updateProfile } from '../../services/authService';
 import { getOrders } from '../../services/orderService';
 import { getAllProducts } from '../../services/productService';
 
 const FarmerProfile = () => {
-  const currentUser = getCurrentUser();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -29,18 +28,18 @@ const FarmerProfile = () => {
     specialties: []
   });
 
-  useEffect(() => {
-    loadAllData();
-  }, []);
-
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     setLoading(true);
     await Promise.all([
       loadProfile(),
       loadStats()
     ]);
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
 
   const loadProfile = async () => {
     const result = await getProfile();

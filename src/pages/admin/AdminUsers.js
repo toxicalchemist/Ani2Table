@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Toast from '../../components/Toast';
 
@@ -22,11 +22,7 @@ const AdminUsers = () => {
   });
   const [formErrors, setFormErrors] = useState({});
 
-  useEffect(() => {
-    loadFarmers();
-  }, []);
-
-  const loadFarmers = async () => {
+  const loadFarmers = useCallback(async () => {
     try {
       const token = localStorage.getItem('ani2table_token');
       const response = await fetch('http://localhost:5000/api/admin/users/farmers', {
@@ -47,7 +43,11 @@ const AdminUsers = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadFarmers();
+  }, [loadFarmers]);
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });

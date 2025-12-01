@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 
 const ConsumerOrderStatus = () => {
-  const [activeOrder, setActiveOrder] = useState({
+  const [activeOrder] = useState({
     id: 'ORD-002',
     date: '2024-11-02',
     farmer: "Garcia Farm",
@@ -114,7 +114,6 @@ const ConsumerOrderStatus = () => {
               <div className="space-y-6">
                 {orderStatuses.map((status, index) => {
                   const isCurrent = index === currentStatusIndex;
-                  const isNext = index === currentStatusIndex + 1;
                   
                   return (
                     <div key={status.status} className="flex items-start space-x-4">

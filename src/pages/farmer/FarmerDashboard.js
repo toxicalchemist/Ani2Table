@@ -3,7 +3,7 @@ import Sidebar from '../../components/Sidebar';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getOrders } from '../../services/orderService';
 import { getAllProducts } from '../../services/productService';
-import { getCurrentUser } from '../../services/authService';
+import { getProfile } from '../../services/authService';
 
 const FarmerDashboard = () => {
   const [timeframe, setTimeframe] = useState('weekly');
@@ -16,13 +16,18 @@ const FarmerDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [salesData, setSalesData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const currentUser = getCurrentUser();
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
 
   const loadDashboardData = async () => {
+    // Load profile data
+    const profileResult = await getProfile();
+    if (profileResult.success) {
+      setProfile(profileResult.user);
+    }
     try {
       // Load orders
       const ordersResult = await getOrders();
@@ -103,10 +108,10 @@ const FarmerDashboard = () => {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold mb-1">
-                    {currentUser?.firstName} {currentUser?.lastName}'s Farm
+                    {profile?.farmName || `${profile?.firstName} ${profile?.lastName}'s Farm`}
                   </h2>
                   <p className="text-gray-200 mb-2">
-                    Member since {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
+                    Member since {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
                   </p>
                   <div className="flex items-center space-x-4">
                     <div>

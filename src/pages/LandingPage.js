@@ -2,16 +2,10 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { Link } from 'react-router-dom';
 import { getAllProducts } from '../services/productService';
-import { getAnalytics } from '../services/adminService';
 import { getMediaUrl } from '../utils/media';
 
 const LandingPage = () => {
   const [scrollY, setScrollY] = useState(0);
-  const [stats, setStats] = useState({
-    farmers: 0,
-    customers: 0,
-    products: 0
-  });
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,17 +21,6 @@ const LandingPage = () => {
 
   const loadLandingData = async () => {
     try {
-      // Load analytics for stats
-      const analyticsResult = await getAnalytics();
-      if (analyticsResult.success) {
-        const analytics = analyticsResult.analytics || {};
-        setStats({
-          farmers: analytics.users?.farmer || 0,
-          customers: analytics.users?.consumer || 0,
-          products: analytics.products?.total || 0
-        });
-      }
-
       // Load featured products (first 3 available products)
       const productsResult = await getAllProducts();
       if (productsResult.success) {
@@ -280,6 +263,7 @@ const LandingPage = () => {
                   </div>
                   <div className="p-6">
                     <h3 className="text-2xl font-bold mb-2 text-gray-800">{product.name}</h3>
+                    <p className="text-sm text-gray-500 mb-2">by {product.farmerName || 'Local Farmer'}</p>
                     <p className="text-gray-600 mb-4">{product.description || product.category}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-3xl font-bold text-primary">₱{product.price}</span>
