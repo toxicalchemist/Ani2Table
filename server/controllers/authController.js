@@ -261,14 +261,71 @@ export const updateProfile = async (req, res) => {
       established
     } = req.body;
 
+    // Build update query dynamically based on provided fields
+    const updates = [];
+    const values = [];
+
+    if (firstName !== undefined) {
+      updates.push('first_name = ?');
+      values.push(firstName);
+    }
+    if (lastName !== undefined) {
+      updates.push('last_name = ?');
+      values.push(lastName);
+    }
+    if (middleName !== undefined) {
+      updates.push('middle_name = ?');
+      values.push(middleName);
+    }
+    if (birthday !== undefined) {
+      updates.push('birthday = ?');
+      values.push(birthday);
+    }
+    if (gender !== undefined) {
+      updates.push('gender = ?');
+      values.push(gender);
+    }
+    if (contactNumber !== undefined) {
+      updates.push('contact_number = ?');
+      values.push(contactNumber);
+    }
+    if (address !== undefined) {
+      updates.push('address = ?');
+      values.push(address);
+    }
+    if (profileImage !== undefined) {
+      updates.push('profile_image = ?');
+      values.push(profileImage);
+    }
+    if (farmName !== undefined) {
+      updates.push('farm_name = ?');
+      values.push(farmName);
+    }
+    if (farmSize !== undefined) {
+      updates.push('farm_size = ?');
+      values.push(farmSize);
+    }
+    if (bio !== undefined) {
+      updates.push('bio = ?');
+      values.push(bio);
+    }
+    if (established !== undefined) {
+      updates.push('established = ?');
+      values.push(established);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No fields to update'
+      });
+    }
+
+    values.push(req.user.id);
+
     await pool.query(
-      `UPDATE users 
-       SET first_name = ?, last_name = ?, middle_name = ?, birthday = ?, 
-           gender = ?, contact_number = ?, address = ?, profile_image = ?,
-           farm_name = ?, farm_size = ?, bio = ?, established = ?
-       WHERE id = ?`,
-      [firstName, lastName, middleName, birthday, gender, contactNumber, 
-       address, profileImage, farmName, farmSize, bio, established, req.user.id]
+      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+      values
     );
 
     res.json({
