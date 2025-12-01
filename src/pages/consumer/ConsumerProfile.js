@@ -4,6 +4,7 @@ import Toast from '../../components/Toast';
 import { getProfile, updateProfile } from '../../services/authService';
 import { getOrders } from '../../services/orderService';
 import { getAllProducts } from '../../services/productService';
+import { getMediaUrl } from '../../utils/media';
 
 const ConsumerProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -104,7 +105,7 @@ const ConsumerProfile = () => {
         .map(p => ({
           name: p.name,
           price: p.price,
-          image: p.imageUrl || 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200'
+          image: getMediaUrl(p.imageUrl)
         }));
       setFavoriteProducts(products);
     }
