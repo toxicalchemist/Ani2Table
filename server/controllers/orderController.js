@@ -285,10 +285,10 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid status' });
     }
 
-    // Check if order exists and get current status and inventory flag
+    // Check if order exists and get current status, consumer_id and inventory flag
     let orders;
     try {
-      const [rows] = await pool.query('SELECT id, status, IFNULL(inventory_adjusted, 0) as inventory_adjusted FROM orders WHERE id = ?', [req.params.id]);
+      const [rows] = await pool.query('SELECT id, consumer_id, status, IFNULL(inventory_adjusted, 0) as inventory_adjusted FROM orders WHERE id = ?', [req.params.id]);
       orders = rows;
     } catch (err) {
       // If the column `inventory_adjusted` does not exist (older schema), try to add it and retry
@@ -296,7 +296,7 @@ export const updateOrderStatus = async (req, res) => {
         try {
           console.warn('inventory_adjusted column missing; attempting to add column to orders table');
           await pool.query('ALTER TABLE orders ADD COLUMN inventory_adjusted TINYINT(1) DEFAULT 0');
-          const [rows] = await pool.query('SELECT id, status, IFNULL(inventory_adjusted, 0) as inventory_adjusted FROM orders WHERE id = ?', [req.params.id]);
+          const [rows] = await pool.query('SELECT id, consumer_id, status, IFNULL(inventory_adjusted, 0) as inventory_adjusted FROM orders WHERE id = ?', [req.params.id]);
           orders = rows;
         } catch (alterErr) {
           console.error('Failed to add inventory_adjusted column:', alterErr.message || alterErr);
@@ -312,11 +312,24 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
-    const currentStatus = orders[0].status;
+    const order = orders[0];
+    const currentStatus = order.status;
+    const inventoryAdjusted = order.inventory_adjusted === 1;
+
+    // Authorization check: consumers can only cancel their own pending orders
+    if (req.user.userType === 'consumer') {
+      if (order.consumer_id !== req.user.id) {
+        return res.status(403).json({ success: false, error: 'Not authorized to modify this order' });
+      }
+      if (status !== 'cancelled') {
+        return res.status(403).json({ success: false, error: 'Consumers can only cancel orders' });
+      }
+      if (currentStatus !== 'pending') {
+        return res.status(400).json({ success: false, error: 'Only pending orders can be cancelled' });
+      }
+    }
 
     // If status becomes 'delivered', and inventory hasn't been adjusted, decrement product stock
-    const inventoryAdjusted = orders[0].inventory_adjusted === 1;
-
     if (status === 'delivered' && !inventoryAdjusted) {
       const connection = await pool.getConnection();
       try {

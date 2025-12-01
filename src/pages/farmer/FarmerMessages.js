@@ -1,56 +1,130 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
+import Toast from '../../components/Toast';
+import { getMessages, sendMessage, markAsRead } from '../../services/messageService';
+import { getCurrentUser } from '../../services/authService';
 
 const FarmerMessages = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [messageText, setMessageText] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
+  const currentUser = getCurrentUser();
 
-  const chats = [
-    {
-      id: 1,
-      name: 'Juan Dela Cruz',
-      avatar: '👤',
-      lastMessage: 'Is the Jasmine rice still available?',
-      time: '10:30 AM',
-      unread: 2,
-      messages: [
-        { sender: 'customer', text: 'Hi! Is the Jasmine rice still available?', time: '10:25 AM' },
-        { sender: 'farmer', text: 'Yes, we have it in stock. How many kg do you need?', time: '10:27 AM' },
-        { sender: 'customer', text: 'Is the Jasmine rice still available?', time: '10:30 AM' },
-      ]
-    },
-    {
-      id: 2,
-      name: 'Maria Santos',
-      avatar: '👤',
-      lastMessage: 'Thank you for the fast delivery!',
-      time: 'Yesterday',
-      unread: 0,
-      messages: [
-        { sender: 'customer', text: 'When will my order arrive?', time: 'Yesterday 2:00 PM' },
-        { sender: 'farmer', text: 'It will be delivered today by 5 PM', time: 'Yesterday 2:15 PM' },
-        { sender: 'customer', text: 'Thank you for the fast delivery!', time: 'Yesterday 6:30 PM' },
-      ]
-    },
-    {
-      id: 3,
-      name: 'Pedro Garcia',
-      avatar: '👤',
-      lastMessage: 'Can I get a bulk discount?',
-      time: '2 days ago',
-      unread: 1,
-      messages: [
-        { sender: 'customer', text: 'I need 50kg of Sinandomeng rice. Can I get a bulk discount?', time: '2 days ago' },
-      ]
-    },
-  ];
+  useEffect(() => {
+    loadMessages();
+    // Poll for new messages every 5 seconds
+    const interval = setInterval(loadMessages, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const handleSendMessage = (e) => {
+  const loadMessages = async () => {
+    const result = await getMessages();
+    if (result.success) {
+      // Group messages by conversation partner
+      const grouped = {};
+      
+      result.messages.forEach(msg => {
+        const partnerId = msg.senderId === currentUser.id ? msg.receiverId : msg.senderId;
+        const partnerName = msg.senderId === currentUser.id ? msg.receiverName : msg.senderName;
+        
+        if (!grouped[partnerId]) {
+          grouped[partnerId] = {
+            id: partnerId,
+            name: partnerName,
+            avatar: '👤',
+            messages: [],
+            unreadCount: 0,
+            lastMessage: null,
+            lastTime: null
+          };
+        }
+        
+        const messageObj = {
+          id: msg.id,
+          sender: msg.senderId === currentUser.id ? 'farmer' : 'customer',
+          text: msg.message,
+          time: new Date(msg.createdAt).toLocaleString('en-US', { 
+            hour: 'numeric', 
+            minute: 'numeric',
+            hour12: true 
+          }),
+          isRead: msg.isRead
+        };
+        
+        grouped[partnerId].messages.push(messageObj);
+        
+        if (!grouped[partnerId].lastTime || new Date(msg.createdAt) > new Date(grouped[partnerId].lastTime)) {
+          grouped[partnerId].lastMessage = msg.message;
+          grouped[partnerId].lastTime = msg.createdAt;
+        }
+        
+        if (msg.receiverId === currentUser.id && !msg.isRead) {
+          grouped[partnerId].unreadCount++;
+        }
+      });
+      
+      const convArray = Object.values(grouped)
+        .sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime))
+        .map(conv => ({
+          ...conv,
+          messages: conv.messages.sort((a, b) => new Date(a.time) - new Date(b.time)),
+          time: getTimeDisplay(conv.lastTime)
+        }));
+      
+      setConversations(convArray);
+    }
+    setLoading(false);
+  };
+
+  const getTimeDisplay = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return date.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  };
+
+  const handleSelectChat = async (chat) => {
+    setSelectedChat(chat);
+    
+    // Mark all messages from this conversation as read
+    const unreadMessages = chat.messages.filter(m => m.sender === 'customer' && !m.isRead);
+    for (const msg of unreadMessages) {
+      await markAsRead(msg.id);
+    }
+    
+    // Reload to update unread count
+    loadMessages();
+  };
+
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (messageText.trim()) {
-      // Handle send message logic
-      console.log('Sending:', messageText);
-      setMessageText('');
+    if (messageText.trim() && selectedChat) {
+      const result = await sendMessage(selectedChat.id, '', messageText);
+      
+      if (result.success) {
+        setMessageText('');
+        await loadMessages();
+        
+        // Update selected chat with new messages
+        const updated = conversations.find(c => c.id === selectedChat.id);
+        if (updated) {
+          setSelectedChat(updated);
+        }
+      } else {
+        setToast({ message: result.error || 'Failed to send message', type: 'error' });
+      }
     }
   };
 
@@ -70,33 +144,44 @@ const FarmerMessages = () => {
             />
           </div>
           <div className="overflow-y-auto h-[calc(100vh-140px)]">
-            {chats.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => setSelectedChat(chat)}
-                className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition ${
-                  selectedChat?.id === chat.id ? 'bg-gray-100' : ''
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white text-xl">
-                    {chat.avatar}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline">
-                      <h3 className="font-semibold truncate">{chat.name}</h3>
-                      <span className="text-xs text-gray-500">{chat.time}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 truncate">{chat.lastMessage}</p>
-                  </div>
-                  {chat.unread > 0 && (
-                    <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-xs font-bold">
-                      {chat.unread}
-                    </div>
-                  )}
-                </div>
+            {loading ? (
+              <div className="flex justify-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ))}
+            ) : conversations.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <p>No messages yet</p>
+                <p className="text-sm mt-2">Customers will message you about your products</p>
+              </div>
+            ) : (
+              conversations.map((chat) => (
+                <div
+                  key={chat.id}
+                  onClick={() => handleSelectChat(chat)}
+                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition ${
+                    selectedChat?.id === chat.id ? 'bg-gray-100' : ''
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white text-xl">
+                      {chat.avatar}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline">
+                        <h3 className="font-semibold truncate">{chat.name}</h3>
+                        <span className="text-xs text-gray-500">{chat.time}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 truncate">{chat.lastMessage}</p>
+                    </div>
+                    {chat.unreadCount > 0 && (
+                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-xs font-bold">
+                        {chat.unreadCount}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -171,6 +256,15 @@ const FarmerMessages = () => {
           )}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

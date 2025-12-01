@@ -8,6 +8,8 @@ const FarmerOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
     loadOrders();
@@ -56,6 +58,11 @@ const FarmerOrders = () => {
     if (window.confirm('Mark this order as delivered?')) {
       handleStatusUpdate(orderId, 'delivered');
     }
+  };
+
+  const handleViewDetails = (order) => {
+    setSelectedOrder(order);
+    setShowDetailsModal(true);
   };
 
   const getStatusColor = (status) => {
@@ -232,7 +239,10 @@ const FarmerOrders = () => {
                           ✅ Mark Delivered
                         </button>
                       )}
-                      <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition font-bold text-sm">
+                      <button 
+                        onClick={() => handleViewDetails(order)}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition font-bold text-sm"
+                      >
                         📋 Details
                       </button>
                     </div>
@@ -242,6 +252,152 @@ const FarmerOrders = () => {
             })
           )}
         </div>
+
+        {/* Order Details Modal */}
+        {showDetailsModal && selectedOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800">Order Details</h2>
+                  <button 
+                    onClick={() => setShowDetailsModal(false)}
+                    className="text-gray-500 hover:text-gray-700 transition"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-gray-600">Order Number</p>
+                      <p className="text-lg font-bold">#{selectedOrder.id}</p>
+                    </div>
+                    <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(selectedOrder.status)}`}>
+                      {selectedOrder.status.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-600 mb-2">Customer</p>
+                    <p className="font-semibold text-lg">{selectedOrder.consumerName}</p>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-600 mb-2">Order Date</p>
+                    <p className="font-semibold">{new Date(selectedOrder.createdAt).toLocaleString()}</p>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-600 mb-3">Items</p>
+                    <div className="space-y-2">
+                      {selectedOrder.items.map((item) => (
+                        <div key={item.id} className="flex justify-between items-center bg-gray-50 p-3 rounded">
+                          <div>
+                            <p className="font-semibold">{item.productName}</p>
+                            <p className="text-sm text-gray-600">
+                              {item.quantity} {item.unit} × ₱{(item.subtotal / item.quantity).toFixed(2)}
+                            </p>
+                          </div>
+                          <p className="font-bold text-primary">₱{item.subtotal.toFixed(2)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between mb-2">
+                      <p className="text-gray-600">Subtotal</p>
+                      <p className="font-semibold">₱{selectedOrder.totalAmount.toFixed(2)}</p>
+                    </div>
+                    <div className="flex justify-between mb-2">
+                      <p className="text-gray-600">Delivery Fee</p>
+                      <p className="font-semibold">₱0.00</p>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold border-t pt-2">
+                      <p>Total</p>
+                      <p className="text-primary">₱{selectedOrder.totalAmount.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-600 mb-2">Payment Method</p>
+                    <p className="font-semibold">{selectedOrder.paymentMethod}</p>
+                    <p className="text-sm text-gray-600 mt-1">Status: {selectedOrder.paymentStatus}</p>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-600 mb-2">Delivery Address</p>
+                    <p className="font-semibold">{selectedOrder.deliveryAddress}</p>
+                  </div>
+
+                  {selectedOrder.notes && (
+                    <div className="border-t pt-4">
+                      <p className="text-sm text-gray-600 mb-2">Notes</p>
+                      <p className="text-gray-800">{selectedOrder.notes}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-2">
+                  <button 
+                    onClick={() => setShowDetailsModal(false)}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-lg transition"
+                  >
+                    Close
+                  </button>
+                  {selectedOrder.status === 'pending' && (
+                    <>
+                      <button 
+                        onClick={() => {
+                          setShowDetailsModal(false);
+                          handleAccept(selectedOrder.id);
+                        }}
+                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition"
+                      >
+                        Accept Order
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowDetailsModal(false);
+                          handleDecline(selectedOrder.id);
+                        }}
+                        className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition"
+                      >
+                        Decline Order
+                      </button>
+                    </>
+                  )}
+                  {selectedOrder.status === 'processing' && (
+                    <button 
+                      onClick={() => {
+                        setShowDetailsModal(false);
+                        handleShip(selectedOrder.id);
+                      }}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition"
+                    >
+                      Mark as Shipped
+                    </button>
+                  )}
+                  {selectedOrder.status === 'shipped' && (
+                    <button 
+                      onClick={() => {
+                        setShowDetailsModal(false);
+                        handleDeliver(selectedOrder.id);
+                      }}
+                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition"
+                    >
+                      Mark as Delivered
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Toast Notification */}
         {toast && (
