@@ -2,12 +2,20 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Toast from '../../components/Toast';
 import { getCurrentUser, getProfile, updateProfile } from '../../services/authService';
+import { getOrders } from '../../services/orderService';
+import { getAllProducts } from '../../services/productService';
 
 const FarmerProfile = () => {
   const currentUser = getCurrentUser();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+  const [stats, setStats] = useState({
+    totalSales: 0,
+    totalProducts: 0,
+    totalOrders: 0,
+    rating: 4.8
+  });
   const [profileData, setProfileData] = useState({
     farmName: '',
     ownerName: '',
@@ -22,11 +30,19 @@ const FarmerProfile = () => {
   });
 
   useEffect(() => {
-    loadProfile();
+    loadAllData();
   }, []);
 
-  const loadProfile = async () => {
+  const loadAllData = async () => {
     setLoading(true);
+    await Promise.all([
+      loadProfile(),
+      loadStats()
+    ]);
+    setLoading(false);
+  };
+
+  const loadProfile = async () => {
     const result = await getProfile();
     if (result.success && result.user) {
       const user = result.user;
@@ -43,7 +59,32 @@ const FarmerProfile = () => {
         specialties: user.specialties || []
       });
     }
-    setLoading(false);
+  };
+
+  const loadStats = async () => {
+    // Load orders
+    const ordersResult = await getOrders();
+    if (ordersResult.success) {
+      const orders = ordersResult.orders || [];
+      const deliveredOrders = orders.filter(o => o.status === 'delivered');
+      const totalSales = deliveredOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+      
+      setStats(prev => ({
+        ...prev,
+        totalSales: totalSales,
+        totalOrders: orders.length
+      }));
+    }
+    
+    // Load products
+    const productsResult = await getAllProducts();
+    if (productsResult.success) {
+      const products = productsResult.products || [];
+      setStats(prev => ({
+        ...prev,
+        totalProducts: products.length
+      }));
+    }
   };
 
   const handleInputChange = (e) => {
@@ -64,7 +105,7 @@ const FarmerProfile = () => {
     if (result.success) {
       setToast({ message: 'Profile updated successfully!', type: 'success' });
       setIsEditing(false);
-      await loadProfile();
+      await loadAllData(); // Reload all data including stats
     } else {
       setToast({ message: result.error || 'Failed to update profile', type: 'error' });
     }
@@ -139,16 +180,9 @@ const FarmerProfile = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      name="email"
-                      value={profileData.email}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  ) : (
-                    <p className="text-gray-600">{profileData.email}</p>
+                  <p className="text-gray-600">{profileData.email}</p>
+                  {isEditing && (
+                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                   )}
                 </div>
                 <div>
@@ -245,19 +279,15 @@ const FarmerProfile = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Total Sales</span>
-                  <span className="font-bold text-xl text-primary">₱125,340</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Products</span>
-                  <span className="font-bold text-xl text-gray-800">12</span>
+                  <span className="font-bold text-xl text-primary">₱{stats.totalSales.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Orders</span>
-                  <span className="font-bold text-xl text-gray-800">156</span>
+                  <span className="font-bold text-xl text-gray-800">{stats.totalOrders}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Rating</span>
-                  <span className="font-bold text-xl text-secondary">⭐ 4.8</span>
+                  <span className="font-bold text-xl text-secondary">⭐ {stats.rating}</span>
                 </div>
               </div>
             </div>

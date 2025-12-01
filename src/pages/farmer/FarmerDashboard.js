@@ -110,8 +110,7 @@ const FarmerDashboard = () => {
                   </p>
                   <div className="flex items-center space-x-4">
                     <div>
-                      <span className="text-sm">Total Products:</span>
-                      <span className="ml-2 font-bold">{stats.activeProducts}</span>
+                
                     </div>
                   </div>
                 </div>

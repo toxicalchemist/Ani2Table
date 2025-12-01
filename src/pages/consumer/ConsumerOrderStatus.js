@@ -17,13 +17,17 @@ const ConsumerOrderStatus = () => {
     deliveryAddress: '123 Main Street, Quezon City, Metro Manila'
   });
 
+  // Map status to proper sequence
+  const statusSequence = ['pending', 'processing', 'shipped', 'delivered'];
+  const currentStatusIndex = statusSequence.indexOf(activeOrder.status);
+  
   const orderStatuses = [
     {
-      status: 'confirmed',
+      status: 'pending',
       label: 'Order Confirmed',
       date: '2024-11-02',
       time: '10:00 AM',
-      completed: true,
+      completed: currentStatusIndex >= 0,
       icon: (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       )
@@ -31,9 +35,9 @@ const ConsumerOrderStatus = () => {
     {
       status: 'processing',
       label: 'Processing',
-      date: '2024-11-02',
-      time: '11:30 AM',
-      completed: true,
+      date: currentStatusIndex >= 1 ? '2024-11-02' : '',
+      time: currentStatusIndex >= 1 ? '11:30 AM' : '',
+      completed: currentStatusIndex >= 1,
       icon: (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       )
@@ -41,19 +45,9 @@ const ConsumerOrderStatus = () => {
     {
       status: 'shipped',
       label: 'Shipped',
-      date: '2024-11-03',
-      time: '02:00 PM',
-      completed: true,
-      icon: (
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-      )
-    },
-    {
-      status: 'in-transit',
-      label: 'In Transit',
-      date: '2024-11-04',
-      time: '09:00 AM',
-      completed: true,
+      date: currentStatusIndex >= 2 ? '2024-11-03' : '',
+      time: currentStatusIndex >= 2 ? '02:00 PM' : '',
+      completed: currentStatusIndex >= 2,
       icon: (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
       )
@@ -61,16 +55,14 @@ const ConsumerOrderStatus = () => {
     {
       status: 'delivered',
       label: 'Delivered',
-      date: 'Est. 2024-11-05',
-      time: '',
-      completed: false,
+      date: currentStatusIndex >= 3 ? '2024-11-05' : 'Est. 2024-11-05',
+      time: currentStatusIndex >= 3 ? '10:00 AM' : '',
+      completed: currentStatusIndex >= 3,
       icon: (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
       )
     },
   ];
-
-  const currentStatusIndex = orderStatuses.findIndex(s => s.status === activeOrder.status);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -107,62 +99,72 @@ const ConsumerOrderStatus = () => {
                 <div className="flex justify-between mb-2">
                   <span className="text-sm font-semibold text-gray-600">Progress</span>
                   <span className="text-sm font-semibold text-primary">
-                    {Math.round(((currentStatusIndex + 1) / orderStatuses.length) * 100)}%
+                    {currentStatusIndex >= 0 ? Math.round(((currentStatusIndex + 1) / statusSequence.length) * 100) : 0}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
                     className="bg-gradient-to-r from-primary to-secondary h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${((currentStatusIndex + 1) / orderStatuses.length) * 100}%` }}
+                    style={{ width: `${currentStatusIndex >= 0 ? ((currentStatusIndex + 1) / statusSequence.length) * 100 : 0}%` }}
                   ></div>
                 </div>
               </div>
 
               {/* Timeline */}
               <div className="space-y-6">
-                {orderStatuses.map((status, index) => (
-                  <div key={status.status} className="flex items-start space-x-4">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        status.completed
-                          ? 'bg-primary text-white'
-                          : index === currentStatusIndex + 1
-                          ? 'bg-secondary text-white animate-pulse'
-                          : 'bg-gray-200 text-gray-400'
-                      }`}>
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          {status.icon}
-                        </svg>
-                      </div>
-                      {index < orderStatuses.length - 1 && (
-                        <div className={`w-0.5 h-16 ${
-                          status.completed ? 'bg-primary' : 'bg-gray-200'
-                        }`}></div>
-                      )}
-                    </div>
-                    <div className="flex-1 pt-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className={`font-bold text-lg ${
-                            status.completed ? 'text-gray-800' : 'text-gray-400'
-                          }`}>
-                            {status.label}
-                          </h4>
-                          {status.date && (
-                            <p className="text-sm text-gray-600">
-                              {status.date} {status.time && `• ${status.time}`}
-                            </p>
-                          )}
+                {orderStatuses.map((status, index) => {
+                  const isCurrent = index === currentStatusIndex;
+                  const isNext = index === currentStatusIndex + 1;
+                  
+                  return (
+                    <div key={status.status} className="flex items-start space-x-4">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                          status.completed
+                            ? 'bg-primary text-white'
+                            : isCurrent
+                            ? 'bg-secondary text-white animate-pulse'
+                            : 'bg-gray-200 text-gray-400'
+                        }`}>
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {status.icon}
+                          </svg>
                         </div>
-                        {status.completed && (
-                          <span className="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
-                            ✓ Completed
-                          </span>
+                        {index < orderStatuses.length - 1 && (
+                          <div className={`w-0.5 h-16 ${
+                            status.completed ? 'bg-primary' : 'bg-gray-200'
+                          }`}></div>
                         )}
                       </div>
+                      <div className="flex-1 pt-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className={`font-bold text-lg ${
+                              status.completed || isCurrent ? 'text-gray-800' : 'text-gray-400'
+                            }`}>
+                              {status.label}
+                            </h4>
+                            {status.date && (
+                              <p className="text-sm text-gray-600">
+                                {status.date} {status.time && `• ${status.time}`}
+                              </p>
+                            )}
+                          </div>
+                          {status.completed && (
+                            <span className="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
+                              ✓ Completed
+                            </span>
+                          )}
+                          {isCurrent && (
+                            <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
+                              ⏳ In Progress
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

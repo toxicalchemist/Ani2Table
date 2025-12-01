@@ -1,49 +1,155 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
-import { getCurrentUser } from '../../services/authService';
+import Toast from '../../components/Toast';
+import { getCurrentUser, getProfile, updateProfile } from '../../services/authService';
+import { getOrders } from '../../services/orderService';
+import { getAllProducts } from '../../services/productService';
 
 const ConsumerProfile = () => {
   const currentUser = getCurrentUser();
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    firstName: currentUser?.firstName || 'Maria',
-    middleName: currentUser?.middleName || 'Cruz',
-    lastName: currentUser?.lastName || 'Santos',
-    email: currentUser?.email || 'maria@example.com',
-    phone: currentUser?.contactNumber || '09123456789',
-    birthday: currentUser?.birthday || '1995-05-15',
-    gender: currentUser?.gender || 'female',
-    address: '123 Main Street, Quezon City, Metro Manila',
-    deliveryInstructions: 'Please call before delivery',
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
+  const [orderHistory, setOrderHistory] = useState([]);
+  const [favoriteProducts, setFavoriteProducts] = useState([]);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalSpent: 0,
+    memberSince: ''
   });
+  const [profileData, setProfileData] = useState({
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    birthday: '',
+    gender: '',
+    address: '',
+    deliveryInstructions: '',
+  });
+
+  useEffect(() => {
+    loadAllData();
+  }, []);
+
+  const loadAllData = async () => {
+    setLoading(true);
+    await Promise.all([
+      loadProfile(),
+      loadOrderHistory(),
+      loadFavoriteProducts()
+    ]);
+    setLoading(false);
+  };
+
+  const loadProfile = async () => {
+    const result = await getProfile();
+    if (result.success && result.user) {
+      const user = result.user;
+      setProfileData({
+        firstName: user.firstName || '',
+        middleName: user.middleName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.contactNumber || '',
+        birthday: user.birthday || '',
+        gender: user.gender || '',
+        address: user.address || '',
+        deliveryInstructions: user.deliveryInstructions || '',
+      });
+      
+      // Calculate member since date
+      if (user.createdAt) {
+        const date = new Date(user.createdAt);
+        const monthYear = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        setStats(prev => ({ ...prev, memberSince: monthYear }));
+      }
+    }
+  };
+
+  const loadOrderHistory = async () => {
+    const result = await getOrders();
+    if (result.success) {
+      const orders = result.orders || [];
+      // Get recent 3 orders
+      const recentOrders = orders.slice(0, 3).map(order => ({
+        id: order.id,
+        date: new Date(order.createdAt).toLocaleDateString(),
+        items: order.items?.length || 0,
+        total: order.totalAmount,
+        status: order.status.charAt(0).toUpperCase() + order.status.slice(1)
+      }));
+      setOrderHistory(recentOrders);
+      
+      // Calculate stats
+      const totalSpent = orders
+        .filter(o => o.status === 'delivered')
+        .reduce((sum, o) => sum + o.totalAmount, 0);
+      
+      setStats(prev => ({
+        ...prev,
+        totalOrders: orders.length,
+        totalSpent: totalSpent
+      }));
+    }
+  };
+
+  const loadFavoriteProducts = async () => {
+    const result = await getAllProducts();
+    if (result.success) {
+      // Get first 2 available products as favorites
+      const products = (result.products || [])
+        .filter(p => p.status === 'available')
+        .slice(0, 2)
+        .map(p => ({
+          name: p.name,
+          price: p.price,
+          image: p.imageUrl || 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200'
+        }));
+      setFavoriteProducts(products);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfileData({ ...profileData, [name]: value });
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Here you would typically save to backend/localStorage
-    alert('Profile updated successfully!');
+  const handleSave = async () => {
+    const result = await updateProfile({
+      firstName: profileData.firstName,
+      middleName: profileData.middleName,
+      lastName: profileData.lastName,
+      birthday: profileData.birthday,
+      gender: profileData.gender,
+      contactNumber: profileData.phone,
+      address: profileData.address
+    });
+    
+    if (result.success) {
+      setToast({ message: 'Profile updated successfully!', type: 'success' });
+      setIsEditing(false);
+      await loadProfile();
+    } else {
+      setToast({ message: result.error || 'Failed to update profile', type: 'error' });
+    }
   };
-
-  const orderHistory = [
-    { id: 'ORD-001', date: '2024-11-01', items: 2, total: 500, status: 'Delivered' },
-    { id: 'ORD-002', date: '2024-11-02', items: 1, total: 250, status: 'In Transit' },
-    { id: 'ORD-003', date: '2024-10-28', items: 3, total: 1200, status: 'Delivered' },
-  ];
-
-  const favoriteProducts = [
-    { name: 'Jasmine Rice', price: 45, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200' },
-    { name: 'Brown Rice', price: 50, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200' },
-  ];
 
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar userType="consumer" />
       
       <div className="flex-1 p-8">
+        {loading ? (
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading profile...</p>
+            </div>
+          </div>
+        ) : (
+          <>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
           <p className="text-gray-600">Manage your personal information and preferences</p>
@@ -234,24 +340,28 @@ const ConsumerProfile = () => {
             {/* Recent Orders */}
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Orders</h3>
-              <div className="space-y-3">
-                {orderHistory.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800">{order.id}</p>
-                      <p className="text-sm text-gray-600">{order.date} • {order.items} items</p>
+              {orderHistory.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No orders yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {orderHistory.map((order) => (
+                    <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800">#{order.id}</p>
+                        <p className="text-sm text-gray-600">{order.date} • {order.items} items</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-primary">₱{order.total.toFixed(2)}</p>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          order.status === 'Delivered' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-primary">₱{order.total}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        order.status === 'Delivered' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {order.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -263,37 +373,41 @@ const ConsumerProfile = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Total Orders</span>
-                  <span className="font-bold text-xl text-primary">24</span>
+                  <span className="font-bold text-xl text-primary">{stats.totalOrders}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Total Spent</span>
-                  <span className="font-bold text-xl text-gray-800">₱5,340</span>
+                  <span className="font-bold text-xl text-gray-800">₱{stats.totalSpent.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Member Since</span>
-                  <span className="font-semibold text-sm text-gray-800">Jan 2024</span>
+                  <span className="font-semibold text-sm text-gray-800">{stats.memberSince || 'N/A'}</span>
                 </div>
               </div>
             </div>
 
             {/* Favorite Products */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Favorite Products</h3>
-              <div className="space-y-3">
-                {favoriteProducts.map((product, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800">{product.name}</p>
-                      <p className="text-sm text-primary font-bold">₱{product.price}/kg</p>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Featured Products</h3>
+              {favoriteProducts.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No products available</p>
+              ) : (
+                <div className="space-y-3">
+                  {favoriteProducts.map((product, index) => (
+                    <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800">{product.name}</p>
+                        <p className="text-sm text-primary font-bold">₱{product.price}/kg</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Loyalty Badge */}
@@ -315,6 +429,17 @@ const ConsumerProfile = () => {
               Save Changes
             </button>
           </div>
+        )}
+          </>
+        )}
+
+        {/* Toast Notification */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
         )}
       </div>
     </div>

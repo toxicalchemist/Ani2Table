@@ -30,17 +30,19 @@ const LandingPage = () => {
       // Load analytics for stats
       const analyticsResult = await getAnalytics();
       if (analyticsResult.success) {
+        const analytics = analyticsResult.analytics || {};
         setStats({
-          farmers: analyticsResult.analytics?.users?.farmers || 0,
-          customers: analyticsResult.analytics?.users?.consumers || 0,
-          products: analyticsResult.analytics?.products?.total || 0
+          farmers: analytics.users?.farmer || 0,
+          customers: analytics.users?.consumer || 0,
+          products: analytics.products?.total || 0
         });
       }
 
       // Load featured products (first 3 available products)
-      const productsResult = await getAllProducts({ status: 'available' });
+      const productsResult = await getAllProducts();
       if (productsResult.success) {
-        setFeaturedProducts((productsResult.products || []).slice(0, 3));
+        const availableProducts = (productsResult.products || []).filter(p => p.status === 'available');
+        setFeaturedProducts(availableProducts.slice(0, 3));
       }
     } catch (error) {
       console.error('Error loading landing data:', error);

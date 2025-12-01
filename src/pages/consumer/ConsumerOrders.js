@@ -13,6 +13,17 @@ const ConsumerOrders = () => {
 
   useEffect(() => {
     loadOrders();
+    
+    // Listen for order placement events from cart
+    const handleOrderPlaced = () => {
+      loadOrders();
+    };
+    
+    window.addEventListener('orderPlaced', handleOrderPlaced);
+    
+    return () => {
+      window.removeEventListener('orderPlaced', handleOrderPlaced);
+    };
   }, []);
 
   const loadOrders = async () => {

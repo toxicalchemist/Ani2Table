@@ -3,6 +3,7 @@ import Sidebar from '../../components/Sidebar';
 import Toast from '../../components/Toast';
 import { getCart, updateCartItem, removeFromCart } from '../../services/cartService';
 import { createOrder } from '../../services/orderService';
+import { getMediaUrl } from '../../utils/media';
 
 const ConsumerCart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -26,7 +27,7 @@ const ConsumerCart = () => {
         price: item.product.price,
         quantity: item.quantity,
         unit: item.product.unit || 'kg',
-        image: item.product.imageUrl,
+        image: getMediaUrl(item.product.imageUrl),
         farmer: item.product.farmerName,
         selected: true
       }));
@@ -37,9 +38,9 @@ const ConsumerCart = () => {
   };
 
   const handleCheckout = async () => {
-    const selectedItems = cartItems.filter(i => i.selected);
+    const selectedItemsToCheckout = cartItems.filter(i => i.selected);
 
-    if (selectedItems.length === 0) {
+    if (selectedItemsToCheckout.length === 0) {
       setToast({ message: 'Please select at least one item to checkout', type: 'warning' });
       return;
     }
@@ -48,7 +49,7 @@ const ConsumerCart = () => {
       paymentMethod,
       deliveryAddress: 'Default Address', // You can add address input
       notes: '',
-      selectedCartItemIds: selectedItems.map(i => i.id)
+      selectedCartItemIds: selectedItemsToCheckout.map(i => i.id)
     };
 
     const result = await createOrder(orderData);
@@ -58,7 +59,12 @@ const ConsumerCart = () => {
       setTimeout(() => {
         setShowNotification(false);
       }, 5000);
-      await loadCart(); // Reload cart (should be empty after checkout)
+      
+      // Reload cart to show remaining items (selected items should be removed by backend)
+      await loadCart();
+      
+      // Trigger a custom event to notify other components to refresh
+      window.dispatchEvent(new CustomEvent('orderPlaced'));
     } else {
       // If server returned details about insufficient stock, show them clearly
       if (result.details && Array.isArray(result.details) && result.details.length > 0) {
@@ -72,10 +78,31 @@ const ConsumerCart = () => {
 
   const updateQuantity = async (cartItemId, newQuantity) => {
     if (newQuantity > 0) {
+      // Save current selection states before reload
+      const currentSelections = {};
+      cartItems.forEach(item => {
+        currentSelections[item.id] = item.selected;
+      });
+      
       const result = await updateCartItem(cartItemId, newQuantity);
       if (result.success) {
         setToast({ message: 'Cart updated', type: 'info' });
-        await loadCart();
+        const cartResult = await getCart();
+        if (cartResult.success) {
+          const items = (cartResult.cartItems || []).map(item => ({
+            id: item.id,
+            productId: item.product.id,
+            name: item.product.name,
+            price: item.product.price,
+            quantity: item.quantity,
+            unit: item.product.unit || 'kg',
+            image: getMediaUrl(item.product.imageUrl),
+            farmer: item.product.farmerName,
+            // Preserve previous selection state
+            selected: currentSelections[item.id] !== undefined ? currentSelections[item.id] : true
+          }));
+          setCartItems(items);
+        }
       } else {
         setToast({ message: result.error || 'Failed to update cart', type: 'error' });
       }
@@ -93,8 +120,9 @@ const ConsumerCart = () => {
     }
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const deliveryFee = 50;
+  const selectedItems = cartItems.filter(item => item.selected);
+  const subtotal = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const deliveryFee = selectedItems.length > 0 ? 50 : 0;
   const total = subtotal + deliveryFee;
 
   return (
