@@ -261,9 +261,29 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     // Check if order exists and get current status and inventory flag
-    const [orders] = await pool.query('SELECT id, status, IFNULL(inventory_adjusted, 0) as inventory_adjusted FROM orders WHERE id = ?', [req.params.id]);
+    let orders;
+    try {
+      const [rows] = await pool.query('SELECT id, status, IFNULL(inventory_adjusted, 0) as inventory_adjusted FROM orders WHERE id = ?', [req.params.id]);
+      orders = rows;
+    } catch (err) {
+      // If the column `inventory_adjusted` does not exist (older schema), try to add it and retry
+      if (err && (err.code === 'ER_BAD_FIELD_ERROR' || (err.sqlMessage && err.sqlMessage.toLowerCase().includes('unknown column')))) {
+        try {
+          console.warn('inventory_adjusted column missing; attempting to add column to orders table');
+          await pool.query('ALTER TABLE orders ADD COLUMN inventory_adjusted TINYINT(1) DEFAULT 0');
+          const [rows] = await pool.query('SELECT id, status, IFNULL(inventory_adjusted, 0) as inventory_adjusted FROM orders WHERE id = ?', [req.params.id]);
+          orders = rows;
+        } catch (alterErr) {
+          console.error('Failed to add inventory_adjusted column:', alterErr.message || alterErr);
+          return res.status(500).json({ success: false, error: 'Server schema error. Please add inventory_adjusted column to orders table.' });
+        }
+      } else {
+        console.error('Error selecting order:', err.message || err);
+        return res.status(500).json({ success: false, error: 'Server error' });
+      }
+    }
 
-    if (orders.length === 0) {
+    if (!orders || orders.length === 0) {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
@@ -280,6 +300,7 @@ export const updateOrderStatus = async (req, res) => {
         const [items] = await connection.query('SELECT product_id, quantity FROM order_items WHERE order_id = ?', [req.params.id]);
 
         for (const item of items) {
+<<<<<<< HEAD
           // Lock the product row and compute new values in JS to avoid SQL parsing issues
           const [productRows] = await connection.query('SELECT quantity FROM products WHERE id = ? FOR UPDATE', [item.product_id]);
           const currentQty = productRows.length ? Number(productRows[0].quantity) : 0;
@@ -291,6 +312,24 @@ export const updateOrderStatus = async (req, res) => {
             `UPDATE products SET quantity = ?, is_low_stock = ?, status = ? WHERE id = ?`,
             [newQty, isLow, newStatus, item.product_id]
           );
+=======
+          const qty = Number(item.quantity);
+          // Decrement with floor at 0
+          const decSql = 'UPDATE products SET quantity = GREATEST(quantity - ?, 0) WHERE id = ?';
+          const decParams = [qty, item.product_id];
+          console.log('Executing SQL (delivery dec):', decSql, decParams);
+          if (!item.product_id || Number.isNaN(qty)) {
+            console.warn('Skipping inventory update for invalid item', item);
+            continue;
+          }
+          await connection.query(decSql, decParams);
+
+          // Update low stock flag and status based on new quantity
+          const flagSql = 'UPDATE products SET is_low_stock = CASE WHEN quantity <= ? THEN 1 ELSE 0 END, status = CASE WHEN quantity <= 0 THEN \"out_of_stock\" ELSE \"available\" END WHERE id = ?';
+          const flagParams = [LOW_STOCK_THRESHOLD, item.product_id];
+          console.log('Executing SQL (delivery flag):', flagSql, flagParams);
+          await connection.query(flagSql, flagParams);
+>>>>>>> cd7c9ca1cbd943b030a157b1b17bffedcda2ff55
         }
 
         await connection.query('UPDATE orders SET status = ?, inventory_adjusted = 1 WHERE id = ?', [status, req.params.id]);
@@ -316,6 +355,7 @@ export const updateOrderStatus = async (req, res) => {
         const [items] = await connection.query('SELECT product_id, quantity FROM order_items WHERE order_id = ?', [req.params.id]);
 
         for (const item of items) {
+<<<<<<< HEAD
           // Lock the product row and compute new values in JS to avoid SQL parsing issues
           const [productRows] = await connection.query('SELECT quantity FROM products WHERE id = ? FOR UPDATE', [item.product_id]);
           const currentQty = productRows.length ? Number(productRows[0].quantity) : 0;
@@ -327,6 +367,24 @@ export const updateOrderStatus = async (req, res) => {
             `UPDATE products SET quantity = ?, is_low_stock = ?, status = ? WHERE id = ?`,
             [newQty, isLow, newStatus, item.product_id]
           );
+=======
+          const qty = Number(item.quantity);
+            // Increase quantity
+            const incSql = 'UPDATE products SET quantity = quantity + ? WHERE id = ?';
+            const incParams = [qty, item.product_id];
+            console.log('Executing SQL (restore inc):', incSql, incParams);
+            if (!item.product_id || Number.isNaN(qty)) {
+              console.warn('Skipping inventory restore for invalid item', item);
+              continue;
+            }
+            await connection.query(incSql, incParams);
+
+            // Update low stock flag and status again
+            const flagSqlRestore = 'UPDATE products SET is_low_stock = CASE WHEN quantity <= ? THEN 1 ELSE 0 END, status = CASE WHEN quantity <= 0 THEN \"out_of_stock\" ELSE \"available\" END WHERE id = ?';
+            const flagParamsRestore = [LOW_STOCK_THRESHOLD, item.product_id];
+            console.log('Executing SQL (restore flag):', flagSqlRestore, flagParamsRestore);
+            await connection.query(flagSqlRestore, flagParamsRestore);
+>>>>>>> cd7c9ca1cbd943b030a157b1b17bffedcda2ff55
         }
 
         await connection.query('UPDATE orders SET status = ?, inventory_adjusted = 0 WHERE id = ?', [status, req.params.id]);

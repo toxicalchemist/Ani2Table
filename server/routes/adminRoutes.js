@@ -3,7 +3,8 @@ import {
   getAnalytics, 
   getTransactions, 
   getAllUsers,
-  getFarmers
+  getFarmers,
+  deleteUser
 } from '../controllers/adminController.js';
 import { authenticateToken, authorizeRole } from '../middleware/auth.js';
 
@@ -17,5 +18,6 @@ router.get('/analytics', getAnalytics);
 router.get('/transactions', getTransactions);
 router.get('/users', getAllUsers);
 router.get('/users/farmers', getFarmers);
+router.delete('/users/:id', deleteUser);
 
 export default router;

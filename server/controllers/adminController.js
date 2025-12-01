@@ -238,3 +238,28 @@ export const getFarmers = async (req, res) => {
     res.status(500).json({ success: false, error: 'Server error' });
   }
 };
+
+// Delete a user (admin only)
+export const deleteUser = async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+
+    // Check user exists
+    const [users] = await pool.query('SELECT id, user_type FROM users WHERE id = ?', [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Only allow deleting farmers via this admin route
+    if (users[0].user_type !== 'farmer') {
+      return res.status(400).json({ success: false, error: 'Only farmer accounts can be deleted here' });
+    }
+
+    await pool.query('DELETE FROM users WHERE id = ?', [userId]);
+
+    res.json({ success: true, message: 'Farmer deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+};

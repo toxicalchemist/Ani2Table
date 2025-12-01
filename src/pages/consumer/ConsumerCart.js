@@ -8,6 +8,7 @@ import { createOrder } from '../../services/orderService';
 const ConsumerCart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectAll, setSelectAll] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [showNotification, setShowNotification] = useState(false);
   const [toast, setToast] = useState(null);
@@ -28,8 +29,14 @@ const ConsumerCart = () => {
         price: item.product.price,
         quantity: item.quantity,
         unit: item.product.unit || 'kg',
+<<<<<<< HEAD
         image: getMediaUrl(item.product.imageUrl),
         farmer: item.product.farmerName
+=======
+        image: item.product.imageUrl,
+        farmer: item.product.farmerName,
+        selected: true
+>>>>>>> cd7c9ca1cbd943b030a157b1b17bffedcda2ff55
       }));
       setCartItems(items);
     } else {
@@ -39,8 +46,10 @@ const ConsumerCart = () => {
   };
 
   const handleCheckout = async () => {
-    if (cartItems.length === 0) {
-      setToast({ message: 'Your cart is empty', type: 'warning' });
+    const selectedItems = cartItems.filter(i => i.selected);
+
+    if (selectedItems.length === 0) {
+      setToast({ message: 'Please select at least one item to checkout', type: 'warning' });
       return;
     }
 
@@ -48,7 +57,8 @@ const ConsumerCart = () => {
     const orderData = {
       paymentMethod,
       deliveryAddress: 'Default Address', // You can add address input
-      notes: ''
+      notes: '',
+      selectedCartItemIds: selectedItems.map(i => i.id)
     };
 
     const result = await createOrder(orderData);
@@ -149,6 +159,16 @@ const ConsumerCart = () => {
                 <div className="divide-y">
                   {cartItems.map((item) => (
                     <div key={item.id} className="p-6 flex items-center space-x-4">
+                      <input
+                        type="checkbox"
+                        checked={!!item.selected}
+                        onChange={(e) => {
+                          const updated = cartItems.map(ci => ci.id === item.id ? { ...ci, selected: e.target.checked } : ci);
+                          setCartItems(updated);
+                          setSelectAll(updated.every(ci => ci.selected));
+                        }}
+                        className="w-5 h-5 mr-2"
+                      />
                       <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded" />
                       <div className="flex-1">
                         <h3 className="font-bold text-lg">{item.name}</h3>
@@ -191,6 +211,25 @@ const ConsumerCart = () => {
             <div className="bg-white rounded-lg shadow p-6 sticky top-8">
               <h2 className="text-xl font-bold mb-6">Order Summary</h2>
               
+              {/* Select all checkbox */}
+              {cartItems.length > 0 && (
+                <div className="mb-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSelectAll(checked);
+                        setCartItems(cartItems.map(ci => ({ ...ci, selected: checked })));
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-gray-700">Select all items</span>
+                  </label>
+                </div>
+              )}
+
               {/* Payment Method Selection */}
               <div className="mb-6 pb-6 border-b">
                 <h3 className="text-sm font-bold text-gray-700 mb-3">Payment Method</h3>

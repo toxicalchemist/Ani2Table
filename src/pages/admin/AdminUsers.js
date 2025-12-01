@@ -480,6 +480,37 @@ const AdminUsers = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-gray-900">{formatDate(farmer.createdAt)}</span>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm(`Delete farmer ${farmer.firstName} ${farmer.lastName}? This cannot be undone.`)) return;
+                                try {
+                                  const token = localStorage.getItem('ani2table_token');
+                                  const res = await fetch(`http://localhost:5000/api/admin/users/${farmer.userId}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                      'Authorization': `Bearer ${token}`,
+                                    }
+                                  });
+                                  const data = await res.json();
+                                  if (res.ok) {
+                                    showToast(data.message || 'Farmer deleted', 'success');
+                                    loadFarmers();
+                                  } else {
+                                    showToast(data.error || 'Failed to delete farmer', 'error');
+                                  }
+                                } catch (err) {
+                                  console.error('Delete farmer error', err);
+                                  showToast('Error deleting farmer', 'error');
+                                }
+                              }}
+                              className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

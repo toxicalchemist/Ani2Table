@@ -30,6 +30,8 @@ export const getAllProducts = async (req, res) => {
       params.push(farmerId);
     }
 
+    
+
     query += ' ORDER BY p.created_at DESC';
 
     const [products] = await pool.query(query, params);

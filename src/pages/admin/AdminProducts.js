@@ -7,6 +7,8 @@ import { getAllProducts, deleteProduct, updateProductStatus } from '../../servic
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [farmers, setFarmers] = useState([]);
+  const [farmerFilter, setFarmerFilter] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -14,12 +16,19 @@ const AdminProducts = () => {
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
+    loadFarmers();
     loadProducts();
   }, []);
 
-  const loadProducts = async () => {
+  const loadProducts = async (filters = {}) => {
     setLoading(true);
-    const result = await getAllProducts();
+    // merge current UI filters if not provided
+    const appliedFilters = {
+      ...(filters || {}),
+    };
+    if (!('farmerId' in appliedFilters) && farmerFilter) appliedFilters.farmerId = farmerFilter;
+
+    const result = await getAllProducts(appliedFilters);
     if (result.success) {
       console.log('Loaded products:', result.products);
       console.log('Product statuses:', result.products.map(p => ({ id: p.id, name: p.name, status: p.status })));
@@ -28,6 +37,28 @@ const AdminProducts = () => {
       setToast({ message: result.error || 'Failed to load products', type: 'error' });
     }
     setLoading(false);
+  };
+
+  const loadFarmers = async () => {
+    try {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const token = localStorage.getItem('ani2table_token');
+      const res = await fetch(`${API_URL}/admin/users/farmers`, {
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      const data = await res.json();
+      // endpoint returns an array (see adminController.getFarmers)
+      if (Array.isArray(data)) {
+        setFarmers(data);
+      } else if (data.success && data.farmers) {
+        setFarmers(data.farmers);
+      }
+    } catch (err) {
+      console.error('Failed to load farmers', err);
+    }
   };
 
   const handleApproveProduct = async (productId, productName) => {
@@ -213,6 +244,40 @@ const AdminProducts = () => {
             >
               Rejected ({rejectedProducts.length})
             </button>
+          </div>
+        </div>
+
+        {/* Farmer and Location Filters */}
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="w-64">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Farmer</label>
+              <select
+                value={farmerFilter}
+                onChange={(e) => { setFarmerFilter(e.target.value); }}
+                className="w-full px-4 py-2 border rounded-lg"
+              >
+                <option value="">All farmers</option>
+                {farmers.map(f => (
+                  <option key={f.userId} value={f.userId}>{`${f.firstName} ${f.lastName}`}</option>
+                ))}
+              </select>
+            </div>
+
+                <div className="pt-6 flex gap-2">
+                  <button
+                    onClick={() => loadProducts()}
+                    className="px-6 py-2 bg-primary text-white rounded-lg font-semibold"
+                  >
+                    Apply
+                  </button>
+                  <button
+                    onClick={() => { setFarmerFilter(''); loadProducts({}); }}
+                    className="px-4 py-2 bg-gray-200 rounded-lg font-semibold"
+                  >
+                    Clear
+                  </button>
+                </div>
           </div>
         </div>
 
