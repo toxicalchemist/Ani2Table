@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Toast from '../../components/Toast';
-import { getCart, updateCartItem, removeFromCart, clearCart } from '../../services/cartService';
-import { getMediaUrl } from '../../utils/media';
+import { getCart, updateCartItem, removeFromCart } from '../../services/cartService';
 import { createOrder } from '../../services/orderService';
 
 const ConsumerCart = () => {
   const [cartItems, setCartItems] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectAll, setSelectAll] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [showNotification, setShowNotification] = useState(false);
@@ -18,7 +16,6 @@ const ConsumerCart = () => {
   }, []);
 
   const loadCart = async () => {
-    setLoading(true);
     const result = await getCart();
     if (result.success) {
       // Map API response to expected format
@@ -37,7 +34,6 @@ const ConsumerCart = () => {
     } else {
       setToast({ message: result.error || 'Failed to load cart', type: 'error' });
     }
-    setLoading(false);
   };
 
   const handleCheckout = async () => {
@@ -48,7 +44,6 @@ const ConsumerCart = () => {
       return;
     }
 
-    setLoading(true);
     const orderData = {
       paymentMethod,
       deliveryAddress: 'Default Address', // You can add address input
@@ -73,7 +68,6 @@ const ConsumerCart = () => {
         setToast({ message: result.error || 'Failed to place order', type: 'error' });
       }
     }
-    setLoading(false);
   };
 
   const updateQuantity = async (cartItemId, newQuantity) => {
