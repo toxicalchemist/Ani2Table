@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Toast from '../../components/Toast';
 import { getCart, updateCartItem, removeFromCart, clearCart } from '../../services/cartService';
+import { getMediaUrl } from '../../utils/media';
 import { createOrder } from '../../services/orderService';
 
 const ConsumerCart = () => {
@@ -27,7 +28,7 @@ const ConsumerCart = () => {
         price: item.product.price,
         quantity: item.quantity,
         unit: item.product.unit || 'kg',
-        image: item.product.imageUrl,
+        image: getMediaUrl(item.product.imageUrl),
         farmer: item.product.farmerName
       }));
       setCartItems(items);
@@ -85,8 +86,8 @@ const ConsumerCart = () => {
   const removeItem = async (cartItemId) => {
     const item = cartItems.find(item => item.id === cartItemId);
     const result = await removeFromCart(cartItemId);
-    if (result.success) {
-      setToast({ message: `${item?.productName || 'Item'} removed from cart`, type: 'warning' });
+      if (result.success) {
+      setToast({ message: `${item?.name || 'Item'} removed from cart`, type: 'warning' });
       await loadCart();
     } else {
       setToast({ message: result.error || 'Failed to remove item', type: 'error' });
