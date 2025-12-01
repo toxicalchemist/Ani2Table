@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../../components/Sidebar';
-import ProductCard from '../../components/ProductCard';
 import Toast from '../../components/Toast';
 import { getAllProducts, createProduct, updateProduct, deleteProduct } from '../../services/productService';
 import { getMediaUrl } from '../../utils/media';
@@ -25,12 +24,7 @@ const FarmerProducts = () => {
     imageFile: null
   });
 
-  // Load products on mount
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     setLoading(true);
     const result = await getAllProducts({ farmerId: currentUser?.id });
     if (result.success) {
@@ -39,7 +33,12 @@ const FarmerProducts = () => {
       setToast({ message: result.error || 'Failed to load products', type: 'error' });
     }
     setLoading(false);
-  };
+  }, [currentUser?.id]);
+
+  // Load products on mount
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   // Check for low stock products
   const lowStockProducts = products.filter(p => p.quantity > 0 && p.quantity < 100);

@@ -1,28 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../../components/Sidebar';
-import ProductCard from '../../components/ProductCard';
 import Toast from '../../components/Toast';
 import { getAllProducts, deleteProduct, updateProductStatus } from '../../services/productService';
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [farmers, setFarmers] = useState([]);
   const [farmerFilter, setFarmerFilter] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct] = useState(null);
   const [toast, setToast] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
-    loadFarmers();
-    loadProducts();
-  }, []);
-
-  const loadProducts = async (filters = {}) => {
-    setLoading(true);
-    // merge current UI filters if not provided
+  const loadProducts = useCallback(async (filters = {}) => {
     const appliedFilters = {
       ...(filters || {}),
     };
@@ -36,8 +27,12 @@ const AdminProducts = () => {
     } else {
       setToast({ message: result.error || 'Failed to load products', type: 'error' });
     }
-    setLoading(false);
-  };
+  }, [farmerFilter]);
+
+  useEffect(() => {
+    loadFarmers();
+    loadProducts();
+  }, [loadProducts]);
 
   const loadFarmers = async () => {
     try {
@@ -98,11 +93,6 @@ const AdminProducts = () => {
   // Check for low stock or out of stock items (only approved products)
   const lowStockProducts = approvedProducts.filter(p => p.quantity > 0 && p.isLowStock);
   const outOfStockProducts = approvedProducts.filter(p => p.quantity === 0);
-
-  const handleEditProduct = (product) => {
-    setSelectedProduct(product);
-    setShowEditModal(true);
-  };
 
   const handleUpdateProduct = (e) => {
     e.preventDefault();

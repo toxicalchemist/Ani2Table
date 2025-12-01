@@ -198,7 +198,8 @@ export const getProfile = async (req, res) => {
   try {
     const [users] = await pool.query(
       `SELECT id, username, email, first_name, last_name, middle_name, 
-        birthday, gender, contact_number, user_type, address, profile_image, created_at 
+        birthday, gender, contact_number, user_type, address, profile_image, 
+        farm_name, farm_size, bio, established, created_at 
        FROM users WHERE id = ?`,
       [req.user.id]
     );
@@ -246,6 +247,10 @@ export const getProfile = async (req, res) => {
 // Update user profile
 export const updateProfile = async (req, res) => {
   try {
+    console.log('=== UPDATE PROFILE DEBUG ===');
+    console.log('User ID:', req.user.id);
+    console.log('Request Body:', req.body);
+    
     const {
       firstName,
       lastName,
@@ -323,10 +328,13 @@ export const updateProfile = async (req, res) => {
 
     values.push(req.user.id);
 
-    await pool.query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
-      values
-    );
+    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
+    console.log('Update Query:', query);
+    console.log('Update Values:', values);
+
+    await pool.query(query, values);
+
+    console.log('Profile updated successfully for user:', req.user.id);
 
     res.json({
       success: true,

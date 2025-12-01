@@ -9,20 +9,36 @@ export const createOrder = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const { paymentMethod, deliveryAddress, notes } = req.body;
+    const { paymentMethod, deliveryAddress, notes, selectedCartItemIds } = req.body;
 
-    // Get cart items (include product name for clearer errors)
-    const [cartItems] = await connection.query(
-      `SELECT c.product_id, c.quantity, p.price, p.quantity as stock, p.farmer_id, p.name as product_name
-       FROM cart c
-       JOIN products p ON c.product_id = p.id
-       WHERE c.consumer_id = ? AND p.status = 'available'`,
-      [req.user.id]
-    );
+    // Get ONLY selected cart items (include product name for clearer errors)
+    let cartItems;
+    if (selectedCartItemIds && Array.isArray(selectedCartItemIds) && selectedCartItemIds.length > 0) {
+      // Use selected items
+      const placeholders = selectedCartItemIds.map(() => '?').join(',');
+      const [items] = await connection.query(
+        `SELECT c.id as cart_id, c.product_id, c.quantity, p.price, p.quantity as stock, p.farmer_id, p.name as product_name
+         FROM cart c
+         JOIN products p ON c.product_id = p.id
+         WHERE c.consumer_id = ? AND c.id IN (${placeholders}) AND p.status = 'available'`,
+        [req.user.id, ...selectedCartItemIds]
+      );
+      cartItems = items;
+    } else {
+      // Fallback to all items if no selection provided (backward compatibility)
+      const [items] = await connection.query(
+        `SELECT c.id as cart_id, c.product_id, c.quantity, p.price, p.quantity as stock, p.farmer_id, p.name as product_name
+         FROM cart c
+         JOIN products p ON c.product_id = p.id
+         WHERE c.consumer_id = ? AND p.status = 'available'`,
+        [req.user.id]
+      );
+      cartItems = items;
+    }
 
     if (cartItems.length === 0) {
       await connection.rollback();
-      return res.status(400).json({ success: false, error: 'Cart is empty' });
+      return res.status(400).json({ success: false, error: 'No items selected for checkout' });
     }
 
     // Check stock availability for all items and collect problems
@@ -72,8 +88,17 @@ export const createOrder = async (req, res) => {
       );
     }
 
-    // Clear cart
-    await connection.query('DELETE FROM cart WHERE consumer_id = ?', [req.user.id]);
+    // Clear only the selected cart items (not the entire cart)
+    if (selectedCartItemIds && Array.isArray(selectedCartItemIds) && selectedCartItemIds.length > 0) {
+      const placeholders = selectedCartItemIds.map(() => '?').join(',');
+      await connection.query(
+        `DELETE FROM cart WHERE consumer_id = ? AND id IN (${placeholders})`,
+        [req.user.id, ...selectedCartItemIds]
+      );
+    } else {
+      // Fallback: clear all items if no selection (backward compatibility)
+      await connection.query('DELETE FROM cart WHERE consumer_id = ?', [req.user.id]);
+    }
 
     // Create transaction record
     await connection.query(

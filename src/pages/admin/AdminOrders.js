@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Toast from '../../components/Toast';
-import { getOrders, updateOrderStatus } from '../../services/orderService';
+import { getOrders } from '../../services/orderService';
 
 const AdminOrders = () => {
   const [filter, setFilter] = useState('all');
@@ -22,16 +22,6 @@ const AdminOrders = () => {
       setToast({ message: result.error || 'Failed to load orders', type: 'error' });
     }
     setLoading(false);
-  };
-
-  const handleStatusUpdate = async (orderId, newStatus) => {
-    const result = await updateOrderStatus(orderId, newStatus);
-    if (result.success) {
-      setToast({ message: 'Order status updated successfully!', type: 'success' });
-      await loadOrders();
-    } else {
-      setToast({ message: result.error || 'Failed to update order', type: 'error' });
-    }
   };
 
   const getStatusColor = (status) => {
